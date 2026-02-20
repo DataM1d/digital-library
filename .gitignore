@@ -1,0 +1,11 @@
+# Binaries
+bin/
+main
+
+# OS generated files
+.DS_Store
+
+# Go specific
+vendor/
+*.exe
+*.test
