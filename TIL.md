@@ -1,7 +1,7 @@
 Phase 1: The Foundation 2026-02-19
 
 1. Project initialization & Go Modules
-    What: Ran go mod init githb.com/DataM1d/digital-library.
+    What: Ran go mod init github.com/DataM1d/digital-library.
 
     Why: Unlike JavaScript which uses npm and package.json, Go uses Modules. This file tracks your dependencies and defines the 'import path' for your internal packages.
 
@@ -79,4 +79,3 @@ Database/sql vs pgx Relationships
     The blank import -> I used _'github.com/jackc/pgx/v5/stdlib'
         why -> pgx functions are not called direcly. They are called with standard sql functions. The underscore tells Go: 'Hey, run the code inside pgx so it registers itself as a driver, then leave it alone'.
     
-

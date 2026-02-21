@@ -9,3 +9,5 @@ main
 vendor/
 *.exe
 *.test
+
+.env
