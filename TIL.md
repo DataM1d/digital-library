@@ -109,3 +109,9 @@ Phase 1: 2026-02-21
 
 5. Dependency injection
     Wiring: I sucessfully wired the application: Database -> Repository -> Handler -> Router.
+
+The big win: Successfully established the Full Request Lifecycle.
+
+    Browser asks for /posts -> Chi Router finds the path -> PostHandler calls the Repo -> PostRepository queries Postgres -> Postgres returns rows -> Go serializes it to JSON -> Browser displays data.
+
+    Dynamic vs Static: Proved the API is dynamic by inserting data via the Postgres CLI and seeing it update in the browser without changing a single line of Go code.
