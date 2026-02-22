@@ -35,6 +35,10 @@ func main() {
 
 	postHandler := handlers.NewPostHandler(postRepo)
 
+	userRepo := repository.NewUserRepository(db)
+
+	authHandler := handlers.NewAuthHandler(userRepo)
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -43,6 +47,8 @@ func main() {
 	})
 
 	r.Get("/posts", postHandler.GetPosts)
+
+	r.Post("/register", authHandler.Register)
 
 	log.Println("Server starting on :8080...")
 	http.ListenAndServe(":8080", r)
