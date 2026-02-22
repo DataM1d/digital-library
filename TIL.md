@@ -110,8 +110,51 @@ Phase 1: 2026-02-21
 5. Dependency injection
     Wiring: I sucessfully wired the application: Database -> Repository -> Handler -> Router.
 
-The big win: Successfully established the Full Request Lifecycle.
+    The big win: Successfully established the Full Request Lifecycle.
 
     Browser asks for /posts -> Chi Router finds the path -> PostHandler calls the Repo -> PostRepository queries Postgres -> Postgres returns rows -> Go serializes it to JSON -> Browser displays data.
 
     Dynamic vs Static: Proved the API is dynamic by inserting data via the Postgres CLI and seeing it update in the browser without changing a single line of Go code.
+
+    
+Phase 2: Security & Identity 2026-02-22
+
+1. Password zero trust policy
+    Concept: Implemented the industry standard rule: Never store plain text passwords.
+
+    Tool: Integrated golang.org/x/crypto/bcrypt.
+
+    Technicality: Learned that Bcrypt handles salting automatically. A salt is a random string added to the password before hashing so that two users with the same password ('password1234') end up with two completly different looking hashes in the database.
+
+2. User schema design (Postgres)
+    Unique Constraints: Applied the UNIQUE constraints to the email column in the users table. This offloads the ('Does this user already exist?')
+    check to the database level, which is faster and more reliable than checking it in Go code.
+
+    Role based foundation: Added a role column (defaulting to 'user') to prepare for the Admin only features. 
+
+3. Model mapping & JSON secuity
+    The hyphen tag(json:"-"): Discovered the power of the hyphen tag in Go. By marking the PasswordHash field with json:"-", i have ensured that the hash stays on the server and is never leaked to the frontend, even if the whole User object os encoded to JSON/
+
+    Clean separation: Created a dedicated User struct in /internal/models to match the new database schema.
+
+4. Reusable utilities(/pkg)
+    Logic vs Tooling: Placed the Bcrypt wrapper functions in /pkg/utils.
+
+    Reasoning: Password hashing is a tool. By putting it in pkg, i am signaling that this code is a standalone helper that does not need to know anything about my specific Library business logic.
+
+5. User related database operations
+    internal/repository/user_repo.go: Handlers should not know how to write SQL. By moving the INSERT and SELECT queries into a Repository, the code stays modular.
+
+    Scan & return: I learned how to use RET
+    URNING id, created_at in Postgres. This allows Go to immediately populate the User struct with the database generated ID and timestamp without making a second query.
+    
+    Lesson: Using QueryRow is more efficient than Query when you only expect one result (like a single user or a new ID). It handles the row closing for you, which reduces the chance of memory leaks.
+
+6. Registrtion Success 
+    What: Successfully implemented a /register endpoint that accepts JSON,hashes passwords, and  saves users to PostgresSQL.
+
+    The Evidence: Using postman, i received HTTP 201 created with a clean JSON response (no password leaked)
+
+    Database: Verified the record exists with a $2a$14$ prefix, indicating a bcrypt algorithm with a cost factor of 14.
+
+    Lesson: The json:"-" tag in the Go model is the MVP here. It allowed me to use the models.User struct to save the hash to the DB, but automatically stripped it out when sending the response back to the client.
