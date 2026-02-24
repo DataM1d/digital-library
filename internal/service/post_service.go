@@ -19,14 +19,24 @@ func (s *PostService) CreateLibraryEntry(post *models.Post, userRole string) err
 	if userRole != "admin" {
 		return errors.New("unauthorized: only admins can create library posts")
 	}
-
 	if post.CategoryID == 0 {
 		return errors.New("category_id is required")
 	}
-
 	return s.repo.Create(post)
 }
 
-func (s *PostService) GetAllPosts() ([]models.Post, error) {
-	return s.repo.GetAll()
+func (s *PostService) GetAllPosts(category string, search string, page, limit int) ([]models.Post, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+
+	return s.repo.GetAll(category, search, limit, offset)
+}
+
+func (s *PostService) ToggleLike(userID, postID int) (bool, error) {
+	return s.repo.ToggleLike(userID, postID)
 }

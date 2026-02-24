@@ -42,7 +42,9 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userRepo)
 
 	r := chi.NewRouter()
+
 	r.Use(chimiddleware.Logger)
+	r.Use(chimiddleware.StripSlashes)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"status": "ok"}`))
@@ -55,6 +57,7 @@ func main() {
 		r.Use(customMiddleware.AuthMiddleware)
 		r.Post("/posts", postHandler.CreatePost)
 		r.Get("/posts", postHandler.GetPosts)
+		r.Post("/posts/{id}/like", postHandler.ToggleLike)
 	})
 
 	log.Println("Server starting on :8080...")

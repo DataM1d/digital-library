@@ -18,4 +18,5 @@ type Post struct {
 	CategoryID   int      `json:"category_id"`
 	CategoryName string   `json:"category_name,omitempty"`
 	Tags         []string `json:"tags,omitempty"`
+	LikeCount    int      `json:"like_count"`
 }

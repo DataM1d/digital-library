@@ -11,3 +11,5 @@ vendor/
 *.test
 
 .env
+
+problems.md
