@@ -1,79 +1,68 @@
-Digital Library API
+Digital Library API (v2)
 
-A clean production ready Go backend for a curated digital archive. This project follows a tiered architecture 
+A clean production ready Go backend for a curated digital archive. This project implements a high performance discovery engine with a focus on clean architecture, relational integrity, and developer experience.
+
 (Handler -> Service -> Repository) and features role based access control, JWT authentication, and advanced SQL filtering.
 
-Quick Start (Docker)
+Recent Updates: The Social & Discovery Layer
+   Slug Engine: Automated SEO friendly URL generation with built in collision resolution.
+   Public Discovery: Opern routes for browsing, searching and filtering without authentication.
+   Relational Comments: Fully integrated social layer with `ON DELETE CASCADE` integrity.
 
-1. Clone the repository:
-   git clone https://github.com/YourUsername/digital-library.git
-   cd digital-library
+Tech Stack
+   Language: GO 1.21+
+   Router: Chi (Lightweight & Idiomatic)
+   Database: PostgreSQL
+   Auth: JWT & Bcrypt
+   Infrastructure: Docker & Docker Compose
 
-2. Setup enviroment variables:
-   Create a .env file in the root:
-   DB_USER=user
-   DB_PASSWORD=pass
-   DB_NAME=digital_library
-   DB_HOST=db
-   DB_PORT=5432
-   JWT_SECRET=your_super_secret_key
+Architecture & Design 
+   This project follows a Tiered Architecture to ensure separation of concerns:
+      Cmd: Entry point for server initialization.
+      Internal/Handlers: HTTP request/response parsing and validation.
+      Internal/Services: The brain: Business logic, permission checks, and slug generation.
+      Pkg: Shared utilities (JWT, Slugs, Password Hashing).
 
-3. Run with one command:
-   docker-compose up --build
-
-Architecture & Design
-
-This project implements the Clean Architecture pattern to ensure separation of concerns:
-
-  Cmd: Entry point of the application.
-
-  Internal/Handlers: HTTP logic and request parsing.
-
-  Internal/Services: Business logic and permission checks (e.g., Admin-only posts).
-
-  Internal/Repositories: Database specific SQL queries.
-
-  Pkg: Reusable utilities (JWT, Bcrypt, DB connection).
-
-Engineering Decisions
-
-  Chi Router: Chosen for its lightweight footprint and idiomatic middleware support.
-
-  PostgreSQL: Utilized for its robust support of relational integrity and advanced querying (ILIKE, Subqueries)
-
-  Manual Transactions: Implemented db.Begin() to ensure tag associations never leave "orphaned" data if a post fails to save.
-  
-Features 
-
-  Auth: JWT based authentication with Bcrypt password hashing.
-
-  RBAC: Role based access control (Admin vs. User).
-
-  Relational DB: Many to Many relationships for Tags using a join table.
-
-  ACID: Atomic transactions for post creation.
-
-  Search: Case insensitive keyword search using PostgreSQL ILIKE.
-
-  Pagination: Limit/Offset pagination for high performance data retrieval.
+Key Engineering Decisions
+   Collision Resistant Slugs: Implemented a recursive check in the Service layer to ensure unique URL paths (e.g, `modern-art` -> `modern-art-1`.
+   Atomic Transactions: Used `db.Begin()` for post creation to ensure Post Tag relationships are created as a single unit of work.
+   Context Key Safety: Utilized custom types for Context keys to prevent collision and ensure type safe middleware assertions.
+   SQL Optimization: Used `COALESCE` and `Subqueries` to handle nullable joins and performance heavy counts directly in the DB.
 
 API Endpoints
-  
-  POST	/register |	Create a new account |	Public
+   Authentication:
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| POST | `/register` | Create a new account | Public |
+| POST | `/login` | Get a JWT token | Public |
 
-  POST	/login |	Get a JWT token	 | Public
+   Discovery 
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| GET | `/posts` | List posts (Search, Category, Tag filters) | Public |
+| GET | `/posts/{id}` | Fetch a single post by ID | Public |
+| GET | `/posts/s/{slug}`| Fetch a single post by clean URL | Public |
+| GET | `/posts/{id}/comments` | View the social feed for a post | Public |
 
-  GET	  /posts | List posts (supports search, page, limit) |	User
+   Interaction
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| POST | `/posts` | Create a new entry | Admin Only |
+| POST | `/posts/{id}/like` | Toggle Like/Unlike status | User |
+| POST | `/posts/{id}/comments`| Post a new comment | User |
 
-  POST	/posts | Create a new entry	 | Admin
+Database Schema
+   The system uses a highly relational schema to minimize data redundancy:
+      `users`: Identity and Role Based Access Control.
+      `posts`: Content storage with `image_url` and `blur_hash`.
+      `post_tags` & `tags`: Many to Many bridge for flexible categorization.
+      `comments`: Relational social data linked to users and posts.
+      `likes`: Unique constraint backed interaction tracking.
 
-  POST  /posts/{id}/like | Toggle like/unlike | User
-  
-Core Table Overview
+Quick Start
+   Clone & Setup:
+   git clone [https://github.com/YourUsername/digital-library.git](https://github.com/YourUsername/digital-library.git)
+   cp .env.example .env # Update your DB credentials and JWT_SECRET
 
-- users (id, email, password_hash, role)
-- posts (id, title, content, category_id, created_at)
-- categories (id, name, slug)
-- tags (id, name)
-- post_tags (post_id, tag_id)
-- likes (user_id, post_id)
+Launch:
+   docker-compose up --build
