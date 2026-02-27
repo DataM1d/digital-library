@@ -444,3 +444,44 @@ Phase 4 Optimization, Refinement version 2: Binary Data, Physical Storage & The 
 
    Lesson: go.mod is the shopping list and go.sum is the receipt that proves the ingredients are authentic and have not been tampered with.
 
+Phase 4: Security Hardening & The Defensive Layer 2026-02-27
+
+1. Rate Limiting with the Token Bucket Algorithm:
+   What: Implemented RateLimitMiddleware using golang.org/x/time/rate.
+
+   Why: To prevent Brute Force attacks on /login and DDoS/Disk filling attacks on /upload.
+
+   The Logic: I learned the Token Bucket concept. A bucket holds a burst of tokens (e.g, 3) Tokens refill at a steady rate (e.g, 5 per minute). Each request costs one token. If the bucket is empty,  the user gets an HTTP 429 Too Many Requests.
+
+   Lesson: This is more efficient than a simple counter because it allows for natural bursty behavior while maintaining a strict login-term average.
+
+2. Surgical Middleware Application:
+   What: Used chi.Router's `.With()` method to apply rate limiting only to specific sensitive routes.
+
+   Concept: You don't want to rate limit the entire API (like browsing posts), only the expensive or dangerous endpoints.
+
+   Lesson: Middleware can be global `r.Use` or specific `r.With`. good architecture applies security exactly where the threat exists, rather than punishing normal users.
+
+3. Thread Safe Limiter Mapping:
+   What: Used a `map[string]*rate.Limiter` combined with sync.Mutex.
+
+   Why: In Go, maps are not thread safe. If two requests from different IPs hit the server at the exact same millesecond, the map could crash.
+
+   Lesson: `mu.Lock()` and `mu.Unlock()` are the traffic lights of go concurrency. They ensure only one goroutine can modify the IP to Limiter map at a time.
+
+4. Content Sanitization (XSS prevention)
+   What: Integrated the `bluemondat` library into the PostService.
+
+   Why: Even with a secure login, an Adming could accidentally post content containing `<script> `tags that steal user cookies.
+
+   Strategy: HTML gets washed in the Service layer before it hits the database.
+
+   Lesson: Never trust user input, even from an Admin. By using `bluemondat.UGCPOlicy()`, it strips out dangerous attributes like `onclick` or `onerror` while keeping safe tags like `<b>` and `<i>`.
+
+5. Production Ready HTTP Timeouts:
+   What: Refactored `http.ListenAndServe` into a custom `http.Server` struct with `ReadTimeout` and `WriteTimeout`.
+
+   Why: To prevent Slowloris attacks where a client opens a connection and sits on it forever, eventually exhausting the server's resources.
+
+   Lesson: A naked `ListenAndServe` is fine for local dev, but a real server needs explicit timeouts to protect itself from hanging connections.
+   

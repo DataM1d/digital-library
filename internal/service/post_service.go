@@ -9,6 +9,7 @@ import (
 	"github.com/DataM1d/digital-library/internal/models"
 	"github.com/DataM1d/digital-library/internal/repository"
 	"github.com/DataM1d/digital-library/pkg/utils"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 type PostService struct {
@@ -24,8 +25,11 @@ func (s *PostService) CreateLibraryEntry(post *models.Post, userRole string, use
 		return errors.New("unauthorized: only admins can create library posts")
 	}
 
-	post.CreatedBy = userID
+	p := bluemonday.UGCPolicy()
+	post.Title = p.Sanitize(post.Title)
+	post.Content = p.Sanitize(post.Content)
 
+	post.CreatedBy = userID
 	if post.Status == "" {
 		post.Status = "published"
 	}
@@ -44,6 +48,10 @@ func (s *PostService) UpdatePost(post *models.Post, userRole string, userID int)
 	if userRole != "admin" {
 		return errors.New("unauthorized: only admins can update posts")
 	}
+
+	p := bluemonday.UGCPolicy()
+	post.Title = p.Sanitize(post.Title)
+	post.Content = p.Sanitize(post.Content)
 
 	post.LastModifiedBy = userID
 

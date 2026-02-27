@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/DataM1d/digital-library/internal/handlers"
 	customMiddleware "github.com/DataM1d/digital-library/internal/middleware"
@@ -64,28 +65,38 @@ func main() {
 		w.Write([]byte(`{"status": "ok"}`))
 	})
 
+	//PUBLIC ROUTES
 	r.Group(func(r chi.Router) {
-		r.Post("/register", authHandler.Register)
-		r.Post("/login", authHandler.Login)
+		r.With(customMiddleware.RateLimitMiddleware).Post("/register", authHandler.Register)
+		r.With(customMiddleware.RateLimitMiddleware).Post("/login", authHandler.Login)
 		r.Get("/posts", postHandler.GetPosts)
 		r.Get("/posts/s/{slug}", postHandler.GetBySlug)
 		r.Get("/categories", categoryHandler.GetCategories)
 	})
 
+	//PROTECTED ROUTES
 	r.Group(func(r chi.Router) {
 		r.Use(customMiddleware.AuthMiddleware)
 
 		r.Post("/categories", categoryHandler.CreateCategory)
 		r.Delete("/categories/{id}", categoryHandler.DeleteCategory)
 
+		r.With(customMiddleware.RateLimitMiddleware).Post("/upload", postHandler.UploadImage)
 		r.Post("/posts", postHandler.CreatePost)
 		r.Put("/posts/{id}", postHandler.UpdatePost)
 		r.Delete("/posts/{id}", postHandler.DeletePost)
 		r.Post("/posts/{id}/like", postHandler.ToggleLike)
 		r.Post("/posts/{id}/comments", commentHandler.CreateComment)
-		r.Post("/upload", postHandler.UploadImage)
 	})
 
+	srv := &http.Server{
+		Addr:         ":8080",
+		Handler:      r,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
 	log.Println("Server starting on :8080...")
-	http.ListenAndServe(":8080", r)
+	log.Fatal(srv.ListenAndServe())
 }
