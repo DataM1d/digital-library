@@ -4,17 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/DataM1d/digital-library/internal/models"
-	"github.com/DataM1d/digital-library/internal/repository"
-	"github.com/DataM1d/digital-library/pkg/utils"
+	"github.com/DataM1d/digital-library/internal/service"
 )
 
 type AuthHandler struct {
-	userRepo *repository.UserRepository
+	userService *service.UserService
 }
 
-func NewAuthHandler(repo *repository.UserRepository) *AuthHandler {
-	return &AuthHandler{userRepo: repo}
+func NewAuthHandler(s *service.UserService) *AuthHandler {
+	return &AuthHandler{userService: s}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -24,28 +22,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	hashedPassword, err := utils.HashPassword(input.Password)
+	user, err := h.userService.Register(input.Email, input.Password)
 	if err != nil {
-		http.Error(w, "Could not hash password", http.StatusInternalServerError)
+		http.Error(w, "User already exists or internal error", http.StatusConflict)
 		return
 	}
 
-	user := &models.User{
-		Email:        input.Email,
-		PasswordHash: hashedPassword,
-		Role:         "user",
-	}
-
-	if err := h.userRepo.Create(user); err != nil {
-		http.Error(w, "Could not create user (email might be taken)", http.StatusConflict)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
 }
@@ -57,27 +43,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	user, err := h.userRepo.GetByEmail(input.Email)
+	token, err := h.userService.Login(input.Email, input.Password)
 	if err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	if !utils.CheckPassword(input.Password, user.PasswordHash) {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	token, err := utils.GenerateToken(user.ID, user.Role)
-	if err != nil {
-		http.Error(w, "Could not generate token", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }

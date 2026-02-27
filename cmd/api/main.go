@@ -34,19 +34,20 @@ func main() {
 	}
 	defer db.Close()
 
-	//REPOSITORIES
 	postRepo := repository.NewPostRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
 
-	//SERVICES
 	postService := service.NewPostService(postRepo)
 	commentService := service.NewCommentService(commentRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
+	userService := service.NewUserService(userRepo)
 
-	//HANDLERS
 	postHandler := handlers.NewPostHandler(postService)
-	authHandler := handlers.NewAuthHandler(userRepo)
+	authHandler := handlers.NewAuthHandler(userService)
 	commentHandler := handlers.NewCommentHandler(commentService)
+	categoryHandler := handlers.NewCategoryHandler(categoryService)
 
 	r := chi.NewRouter()
 
@@ -54,7 +55,6 @@ func main() {
 	r.Use(chimiddleware.StripSlashes)
 	r.Use(chimiddleware.Recoverer)
 
-	//STATIC FILES
 	workDir, _ := os.Getwd()
 	filesDir := http.Dir(filepath.Join(workDir, "uploads"))
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(filesDir)))
@@ -64,17 +64,19 @@ func main() {
 		w.Write([]byte(`{"status": "ok"}`))
 	})
 
-	//PUBLIC
 	r.Group(func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
 		r.Get("/posts", postHandler.GetPosts)
 		r.Get("/posts/s/{slug}", postHandler.GetBySlug)
+		r.Get("/categories", categoryHandler.GetCategories)
 	})
 
-	//PROTECTED
 	r.Group(func(r chi.Router) {
 		r.Use(customMiddleware.AuthMiddleware)
+
+		r.Post("/categories", categoryHandler.CreateCategory)
+		r.Delete("/categories/{id}", categoryHandler.DeleteCategory)
 
 		r.Post("/posts", postHandler.CreatePost)
 		r.Put("/posts/{id}", postHandler.UpdatePost)

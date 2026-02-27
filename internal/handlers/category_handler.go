@@ -1,0 +1,55 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"github.com/DataM1d/digital-library/internal/service"
+	"github.com/go-chi/chi/v5"
+)
+
+type CategoryHandler struct {
+	service *service.CategoryService
+}
+
+func NewCategoryHandler(s *service.CategoryService) *CategoryHandler {
+	return &CategoryHandler{service: s}
+}
+
+func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	cat, err := h.service.CreateCategory(input.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(cat)
+}
+
+func (h *CategoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
+	cats, err := h.service.GetAllCategories()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(cats)
+}
+
+func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	if err := h.service.DeleteCategory(id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

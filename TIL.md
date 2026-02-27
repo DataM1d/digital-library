@@ -399,7 +399,7 @@ Phase 4: Binary Data & Physical Storage 2026-02-26
     Why: This makes the API more resillient. If the post creation fails, you still have the image. If the image upload fails, you do not waste DB resources.
 
 
-Phase 4 Updated version 2: Binary Data, Physical Storage & The Lifecycle Final 2026-02-27
+Phase 4 Optimization, Refinement version 2: Binary Data, Physical Storage & The Lifecycle Final 2026-02-27
 
 1. Service vs Repo:
    What: Implemented DeletePost logic that removes both the DB row and the physical file.
@@ -409,5 +409,38 @@ Phase 4 Updated version 2: Binary Data, Physical Storage & The Lifecycle Final 2
 2. RESTful Roputing Mastery:
    What: Encountered 405 method not allowed errors.
 
-   Lesson: Learned that Chi router is strict. If you define a GET for /posts but not a PUT for /posts/{id}, the server will reject the request. Every CRUD operation needs its own explicit method + path registration.
-   
+   Lesson: Learned that Chi router is strict. If you define a `GET for /posts `but not a `PUT for /posts/{id}`, the server will reject the request. Every CRUD operation needs its own explicit method + path registration.
+
+3. The Service Layer Migration:
+   What: Refactored the Authentication logic out of the AuthHandler and into a dedicated UserService.
+
+   Why: Previously, the AuthHandler was doing too much. Hashing passwords, generating JWTs, and talking to the database. By moving this to a Service, the Handler now only handles HTTP `(Request/Response)`, making the code easier to test and maintain.
+
+   Lesson: If Handler has more than 10 lines of logic before hitting the database, that logic probably belongs oin a Service.
+
+4. Dependency Injection & Wiring
+   What: Updated main.go to initialize `Category` and `User` services.
+
+   Concept: Followed the strict Bottom up initialization order:
+
+   1. Connect Database.
+   2. Initialize Repositories.
+   3. Initializd Services.
+   4. Initialize Handlers.
+
+   Lesson: This wiring in main.go is what makes the app modular. Because every piece is injected into the next, i can swap a database or a service without breaking the rest of the application.
+
+5. Category CRUD & Data Normalization:
+   What: Implemented full API support for categories(Create, List, Delete).
+
+   Why: Moving from hardcoded strings to a dedicated categories table allows for dynamic growth by linking posts to category IDs, i ensured that renaming a category in one place updates it for every associated post automatically.
+
+   Lesson: Relational databases are built for this. Use IDs for linking and names only for displat.
+
+6. The Importance of go.sum:
+   Discovery: Learned that adding a line to go.mod manually isn't enough; the go.sum file must contain a matching security hash.
+
+   Action: Used go mod download and go mod tidy to synchronize the security fingerprints of the new lib/pq dependency.
+
+   Lesson: go.mod is the shopping list and go.sum is the receipt that proves the ingredients are authentic and have not been tampered with.
+
