@@ -97,7 +97,7 @@ func (r *PostRepository) Delete(id int) (string, error) {
 	return ImageURL, err
 }
 
-func (r *PostRepository) GetAll(category string, search string, tags []string, limit, offset int) ([]models.Post, error) {
+func (r *PostRepository) GetAll(category string, search string, tags []string, limit, offset int, statusFilter string) ([]models.Post, error) {
 	query := `
         SELECT DISTINCT p.id, p.title, p.content, p.image_url, p.blur_hash, p.alt_text, p.slug, p.status,
                p.created_at, c.name as category_name,
@@ -110,6 +110,12 @@ func (r *PostRepository) GetAll(category string, search string, tags []string, l
 
 	args := []interface{}{"%" + search + "%", limit, offset}
 	argCount := 4
+
+	if statusFilter != "" {
+		query += fmt.Sprintf(" AND p.status = $%d", argCount)
+		args = append(args, statusFilter)
+		argCount++
+	}
 
 	if category != "" {
 		query += fmt.Sprintf(" AND c.slug = $%d", argCount)
@@ -220,4 +226,40 @@ func (r *PostRepository) SlugExists(slug string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM posts WHERE slug = $1)`
 	err := r.db.QueryRow(query, slug).Scan(&exists)
 	return exists, err
+}
+
+func (r *PostRepository) GetUserLikedPosts(userID int) ([]models.Post, error) {
+	query := `
+        SELECT p.id, p.title, p.slug, p.image_url, p.status, p.created_at
+        FROM posts p
+        JOIN post_likes pl ON p.id = pl.post_id
+        WHERE pl.user_id = $1 AND p.status = 'published'
+        ORDER BY pl.created_at DESC`
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []models.Post
+	for rows.Next() {
+		var p models.Post
+		var img, slug, status sql.NullString
+
+		err := rows.Scan(&p.ID, &p.Title, &slug, &status, &p.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		p.ImageURL = img.String
+		p.Slug = slug.String
+		p.Status = status.String
+
+		posts = append(posts, p)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return posts, nil
 }

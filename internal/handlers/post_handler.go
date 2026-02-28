@@ -89,6 +89,8 @@ func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 	tags := r.URL.Query()["tags"]
 
+	role, _ := r.Context().Value(middleware.RoleKey).(string)
+
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
 		page = 1
@@ -99,7 +101,7 @@ func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 		limit = 10
 	}
 
-	posts, err := h.postService.GetAllPosts(category, search, tags, page, limit)
+	posts, err := h.postService.GetAllPosts(category, search, tags, page, limit, role)
 	if err != nil {
 		http.Error(w, "Could not fetch posts", http.StatusInternalServerError)
 		return

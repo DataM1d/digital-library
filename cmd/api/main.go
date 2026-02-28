@@ -80,6 +80,7 @@ func main() {
 
 		r.Post("/categories", categoryHandler.CreateCategory)
 		r.Delete("/categories/{id}", categoryHandler.DeleteCategory)
+		r.Get("/users/me/likes", postHandler.GetMyLikedPosts)
 
 		r.With(customMiddleware.RateLimitMiddleware).Post("/upload", postHandler.UploadImage)
 		r.Post("/posts", postHandler.CreatePost)

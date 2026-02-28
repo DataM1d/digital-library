@@ -102,7 +102,7 @@ func (s *PostService) generateUniqueSlug(baseSlug string) (string, error) {
 	}
 }
 
-func (s *PostService) GetAllPosts(category string, search string, tags []string, page, limit int) ([]models.Post, error) {
+func (s *PostService) GetAllPosts(category string, search string, tags []string, page, limit int, userRole string) ([]models.Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -111,7 +111,12 @@ func (s *PostService) GetAllPosts(category string, search string, tags []string,
 	}
 	offset := (page - 1) * limit
 
-	return s.repo.GetAll(category, search, tags, limit, offset)
+	statusFilter := "published"
+	if userRole == "admin" {
+		statusFilter = ""
+	}
+
+	return s.repo.GetAll(category, search, tags, limit, offset, statusFilter)
 }
 
 func (s *PostService) ToggleLike(userID, postID int) (bool, error) {

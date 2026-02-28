@@ -23,5 +23,27 @@ func (s *CommentService) AddComment(c *models.Comment) error {
 }
 
 func (s *CommentService) GetPostComments(postID int) ([]models.Comment, error) {
-	return s.repo.GetByPostID(postID)
+	flatComments, err := s.repo.GetByPostID(postID)
+	if err != nil {
+		return nil, err
+	}
+
+	commentMap := make(map[int]*models.Comment)
+	for i := range flatComments {
+		commentMap[flatComments[i].ID] = &flatComments[i]
+	}
+
+	var tree []models.Comment
+
+	for _, c := range flatComments {
+		if c.ParentID == nil {
+			tree = append(tree, *commentMap[c.ID])
+		} else {
+			if parent, exists := commentMap[*c.ParentID]; exists {
+				parent.Replies = append(parent.Replies, *commentMap[c.ID])
+			}
+		}
+	}
+
+	return tree, nil
 }
