@@ -3,7 +3,7 @@ Digital Library API (v2)
 A clean, production ready Go backend for a curated digital archive. This project implements a high performance discovery engine with a focus on Clean Architecture, relational integrity, and developer experience.
 
 The system follows a strict unidirectional data flow:
-   Handler (HTTP) ⮕ Service (Logic) ⮕ Repository (SQL).  
+   Handler (HTTP) -> Service (Logic) -> Repository (SQL).  
 This ensures that business rules (like slug generation or permission checks) are never bypassed and are easily testable.
 
 Recent Updates: The Social & Discovery Layer
