@@ -1,8 +1,10 @@
 export interface User {
     id: number;
+    username: string;
     email: string;
     role: 'user' | 'admin';
     created_at: string;
+    updated_at: string;
 }
 
 export interface LoginCredentials {
@@ -13,6 +15,7 @@ export interface LoginCredentials {
 export interface RegisterPayload {
   email: string;
   password: string;
+  username: string;
 }
 
 export interface Post {
