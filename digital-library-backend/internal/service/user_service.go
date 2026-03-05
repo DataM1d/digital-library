@@ -16,20 +16,20 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) Register(email, password string) (*models.User, error) {
+func (s *UserService) Register(username, email, password string) (*models.User, error) {
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
 
 	user := &models.User{
+		Username:     username,
 		Email:        email,
 		PasswordHash: hashedPassword,
 		Role:         "user",
 	}
 
-	err = s.repo.Create(user)
-	if err != nil {
+	if err := s.repo.Create(user); err != nil {
 		return nil, err
 	}
 
@@ -46,10 +46,5 @@ func (s *UserService) Login(email, password string) (string, error) {
 		return "", errors.New("invalid email or password")
 	}
 
-	token, err := utils.GenerateToken(user.ID, user.Role)
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
+	return utils.GenerateToken(user.ID, user.Role)
 }

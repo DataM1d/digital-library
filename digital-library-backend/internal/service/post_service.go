@@ -28,8 +28,8 @@ func (s *PostService) CreateLibraryEntry(post *models.Post, userRole string, use
 	p := bluemonday.UGCPolicy()
 	post.Title = p.Sanitize(post.Title)
 	post.Content = p.Sanitize(post.Content)
-
 	post.CreatedBy = userID
+
 	if post.Status == "" {
 		post.Status = "published"
 	}
@@ -52,7 +52,6 @@ func (s *PostService) UpdatePost(post *models.Post, userRole string, userID int)
 	p := bluemonday.UGCPolicy()
 	post.Title = p.Sanitize(post.Title)
 	post.Content = p.Sanitize(post.Content)
-
 	post.LastModifiedBy = userID
 
 	if post.Status == "" {
@@ -92,17 +91,15 @@ func (s *PostService) generateUniqueSlug(baseSlug string) (string, error) {
 		if !exists {
 			return currentSlug, nil
 		}
-
 		if counter > 100 {
 			return fmt.Sprintf("%s-%s", baseSlug, utils.RandomString(2)), nil
 		}
-
 		currentSlug = fmt.Sprintf("%s-%d", baseSlug, counter)
 		counter++
 	}
 }
 
-func (s *PostService) GetAllPosts(category string, search string, tags []string, page, limit int, userRole string) ([]models.Post, int, error) {
+func (s *PostService) GetAllPosts(category, search string, tags []string, page, limit int, userRole string) ([]models.Post, int, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -131,9 +128,5 @@ func (s *PostService) GetPostBySlug(slug string) (*models.Post, error) {
 }
 
 func (s *PostService) GetLikedPosts(userID int) ([]models.Post, error) {
-	posts, err := s.repo.GetUserLikedPosts(userID)
-	if err != nil {
-		return nil, fmt.Errorf("Service failed to fetch liked posts: %w", err)
-	}
-	return posts, nil
+	return s.repo.GetUserLikedPosts(userID)
 }

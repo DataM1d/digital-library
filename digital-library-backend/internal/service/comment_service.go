@@ -34,7 +34,6 @@ func (s *CommentService) GetPostComments(postID int) ([]models.Comment, error) {
 	}
 
 	var tree []models.Comment
-
 	for _, c := range flatComments {
 		if c.ParentID == nil {
 			tree = append(tree, *commentMap[c.ID])
@@ -44,6 +43,5 @@ func (s *CommentService) GetPostComments(postID int) ([]models.Comment, error) {
 			}
 		}
 	}
-
 	return tree, nil
 }
