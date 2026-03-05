@@ -1,33 +1,28 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/DataM1d/digital-library/pkg/utils"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type ContextKey string
-
-const (
-	UserIDKey ContextKey = "user_id"
-	RoleKey   ContextKey = "role"
-)
-
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			utils.JSONError(w, "Authorizaton header required", http.StatusUnauthorized)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			c.Abort()
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			utils.JSONError(w, "Invalid authorization format", http.StatusUnauthorized)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+			c.Abort()
 			return
 		}
 
@@ -39,13 +34,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		})
 
 		if err != nil || !token.Valid {
-			utils.JSONError(w, "Invalid or expired token", http.StatusUnauthorized)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			c.Abort()
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
-		ctx = context.WithValue(ctx, RoleKey, claims.Role)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+		c.Set("user_id", claims.UserID)
+		c.Set("role", claims.Role)
+		c.Next()
+	}
 }

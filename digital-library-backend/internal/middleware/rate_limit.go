@@ -4,8 +4,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/DataM1d/digital-library/pkg/utils"
-
+	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 )
 
@@ -25,16 +24,15 @@ func getLimiter(ip string) *rate.Limiter {
 	return limiters[ip]
 }
 
-func RateLimitMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := r.RemoteAddr
-
+func RateLimitMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
 		limiter := getLimiter(ip)
 		if !limiter.Allow() {
-			utils.JSONError(w, "Too many requests. Please slow down.", http.StatusTooManyRequests)
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests"})
+			c.Abort()
 			return
 		}
-
-		next.ServeHTTP(w, r)
-	})
+		c.Next()
+	}
 }
