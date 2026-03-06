@@ -716,3 +716,18 @@ phase 3: Interactive Social Layer: 2026-03-06
 5. Authenticated Request Interceptors:
    Refined a centralized `request` helper that automatically injets JWT Bearer tokens from `localStorage` into every outgoing API call. This ensures that protected Go routes (like `/like` or `/comments`) always receive the necessary credentials without manual boilerplate in every component.
 
+phase 4: Reliability & Production Polish: 2026-03-06
+1. Derived State vs Effects:
+   Learned that using `useEffect` to sync props to state (like in an Image fallback) causes unnecessary cascading renders. Switched to the `key` prop pattern to reset component state instantly when props change, significantly improving performance.
+
+2. Perceived Performance with Skeletons:
+   Implemented Skeleton loaders for the post grid. I learned that perceived speed is more important than actual speed; by showing the layout structure immediately, users feel the app is faster compared to showing a generic loading spinner.
+
+3. Global Error Boundaries:
+   Used Next.js `error.tsx` to create a Safety Net. This ensures that if the Go backend or a specific component fails, the entire application doesn't crash. Instead, it provides a clean, branded recovery UI.
+
+4. The Bouncer Pattern:
+   Created a `ProtectedRoute` Higher Order Component. This acts as a reusable gatekeeper that checks the `AuthContext` before rendering sensitive pages, redirecting unauthenticated users to `/login`.
+
+5. Toast Notifications for Feedback:
+   Integrated `sonner` for global non intrusive feedback. I learned that providing immediate visual confirmation for actions (like liking or logging out) is essential for a professional feel.
