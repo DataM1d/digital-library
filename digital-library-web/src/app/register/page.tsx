@@ -16,8 +16,8 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
-    try {
+  
+  try {
       await register({ username, email, password });
     } catch (err) {
       if (err instanceof Error) {
