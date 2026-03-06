@@ -20,6 +20,10 @@ export interface RegisterPayload {
 
 export interface Post {
     id: number;
+    created_by: number; 
+    category_id: number;
+    last_modified_by: number;
+    like_count: number;
     title: string;
     content: string;
     image_url: string;
@@ -29,8 +33,10 @@ export interface Post {
     status: 'published' | 'draft';
     category_name: string; 
     tags: string[]
-    like_count: number;
     created_at: string;
+    updated_at: string;
+    meta_description?: string;
+    og_image?: string;
 }
 
 export interface PaginatedResponse<T> {

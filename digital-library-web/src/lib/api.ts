@@ -17,16 +17,23 @@ export const AuthResponseSchema = z.object({
 
 export const PostSchema = z.object({
   id: z.number(),
+  created_by: z.number(),
+  category_id: z.number(),
+  last_modified_by: z.number(),
+  like_count: z.number().default(0),
   title: z.string(),
   content: z.string(),
-  image_url: z.string().default("/placeholder.jpg"),
+  image_url: z.string(),
   blur_hash: z.string().default(""),
   alt_text: z.string().default(""),
   slug: z.string(),
   status: z.enum(["published", "draft"]).default("published"),
-  category_id: z.number().nullable().transform((val) => val ?? 1), 
-  created_by: z.number(),
-  like_count: z.number().default(0),
+  category_name: z.string(),
+  tags: z.array(z.string()).default([]),
+  created_at: z.string(),
+  updated_at: z.string(),
+  meta_description: z.string().optional(),
+  og_image: z.string().optional(),
 });
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
