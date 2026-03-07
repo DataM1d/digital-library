@@ -130,3 +130,7 @@ func (s *PostService) GetPostBySlug(slug string) (*models.Post, error) {
 func (s *PostService) GetLikedPosts(userID int) ([]models.Post, error) {
 	return s.repo.GetUserLikedPosts(userID)
 }
+
+func (s *PostService) UpdateBlurHash(id int, hash string) error {
+	return s.repo.UpdateBlurHash(id, hash)
+}

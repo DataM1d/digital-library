@@ -289,3 +289,9 @@ func (r *PostRepository) GetUserLikedPosts(userID int) ([]models.Post, error) {
 	}
 	return posts, nil
 }
+
+func (r *PostRepository) UpdateBlurHash(id int, hash string) error {
+	query := `UPDATE posts SET blur_hash = $1, updated_at = NOW() WHERE id = $2`
+	_, err := r.db.Exec(query, hash, id)
+	return err
+}

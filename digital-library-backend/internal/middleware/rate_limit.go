@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -18,7 +19,7 @@ func getLimiter(ip string) *rate.Limiter {
 	defer mu.Unlock()
 
 	if _, exists := limiters[ip]; !exists {
-		limiters[ip] = rate.NewLimiter(rate.Limit(5.0/60.0), 3)
+		limiters[ip] = rate.NewLimiter(rate.Every(time.Minute/5), 10)
 	}
 
 	return limiters[ip]
