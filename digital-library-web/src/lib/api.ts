@@ -77,8 +77,15 @@ async function request<T>(
 
 export const api = {
   posts: {
-    list: (query: string = "") => 
-        request<PaginatedResponse<Post>>(`/posts${query}`),
+    list: (params: { search?: string; page?: number; limit?: number } = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.search) queryParams.append("search", params.search);
+        if (params.page) queryParams.append("page", params.page.toString());
+        if (params.limit) queryParams.append("limit", params.limit.toString());
+        
+        const queryString = queryParams.toString();
+        return request<PaginatedResponse<Post>>(`/posts${queryString ? `?${queryString}` : ""}`);
+    },
     slug: (slug: string) => 
         request<Post>(`/posts/s/${slug}`, {}, PostSchema),
     like: (slug: string) => 

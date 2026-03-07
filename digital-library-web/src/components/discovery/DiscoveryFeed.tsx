@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
-import { Post, PaginatedResponse } from "@/types";
+import { Post } from "@/types";
 import { PostCard } from "./PostCard";
 import { SearchBar } from "./SearchBar";
 
@@ -16,8 +16,12 @@ export function DiscoveryFeed() {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const q = searchQuery ? `?search=${searchQuery}&page=${page}` : `?page=${page}`;
-      const res = await api.posts.list(q);
+      const res = await api.posts.list({ 
+        search: searchQuery, 
+        page: page,
+        limit: 12
+      });
+      
       setPosts(res.data);
       setTotalPages(res.meta.total_pages);
     } catch (err) {
@@ -31,7 +35,7 @@ export function DiscoveryFeed() {
     fetchPosts();
   }, [fetchPosts]);
 
-return (
+  return (
     <div className="space-y-12">
       <div className="flex flex-col items-center justify-center space-y-4">
         <SearchBar onSearch={(val) => { setSearchQuery(val); setPage(1); }} />

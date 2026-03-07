@@ -1,62 +1,67 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
+import { Post } from "@/types";
+import { PostCard } from "@/components/posts/PostCard";
+import { PostCardSkeleton } from "@/components/posts/PostCardSkeleton";
+import { SearchBar } from "@/components/discovery/SearchBar";
 
 export default function HomePage() {
-  const { user, logout, isAuthenticated, loading } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-300 border-t-black dark:border-zinc-700 dark:border-t-white" />
-      </div>
-      
-    )
-  }
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await api.posts.list({ search: searchQuery });
+        setPosts(response.data);
+      } catch (err) {
+        console.error("Failed to load archive:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchPosts();
+  }, [searchQuery]);
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-4 dark:bg-black">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
-          Digital Library
-        </h1>
-        
-        {isAuthenticated ? (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <p className="text-zinc-600 dark:text-zinc-400">
-              Welcome back, <span className="font-semibold text-black dark:text-white">{user?.username}</span>
+    <main className="min-h-screen bg-white dark:bg-black px-6 py-12">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-12 flex flex-col items-center justify-between gap-6 sm:flex-row">
+          <div className="space-y-2 text-center sm:text-left">
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
+              The Digital Archive
+            </h1>
+            <p className="text-zinc-500 dark:text-zinc-400">
+              A curated collection of thoughts, designs, and discoveries.
             </p>
-            <div className="flex flex-col gap-2">
-               <button
-                onClick={logout}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 transition-colors shadow-sm"
-              >
-                Sign Out
-              </button>
-            </div>
           </div>
-        ) : (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <p className="text-zinc-600 dark:text-zinc-400 max-w-sm">
-              Please sign in or create an account to access the curated archive.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/login"
-                className="inline-block rounded-lg bg-black px-6 py-2 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 transition-colors shadow-sm"
-              >
-                Log In
-              </Link>
-              <Link
-                href="/register"
-                className="inline-block rounded-lg border border-zinc-300 bg-white px-6 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-transparent dark:text-white dark:hover:bg-zinc-900 transition-colors"
-              >
-                Create Account
-              </Link>
+          
+          <SearchBar onSearch={setSearchQuery} />
+        </header>
+
+        <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <PostCardSkeleton key={i} />
+            ))
+          ) : posts.length > 0 ? (
+            posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))
+          ) : (
+            <div className="col-span-full py-20 text-center text-zinc-500">
+              {searchQuery 
+                ? `No results found for "${searchQuery}"` 
+                : "The archive is currently empty."}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
