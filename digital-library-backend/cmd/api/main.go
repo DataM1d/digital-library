@@ -44,7 +44,6 @@ func main() {
 	catHandler := handlers.NewCategoryHandler(catService)
 
 	r := gin.Default()
-
 	r.Use(middleware.CORSMiddleware())
 
 	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {

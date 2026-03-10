@@ -18,6 +18,12 @@ export const UserSchema = z.object({
   updated_at: z.string().optional(),
 });
 
+export const CategorySchema = z.object({
+  id: z.number(),
+  name: z.string().min(1),
+  slug: z.string(),
+});
+
 export const AuthResponseSchema = z.object({
   token: z.string(),
   user: UserSchema,
@@ -62,7 +68,7 @@ async function request<T>(
         headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+    const response = await fetch(`${BASE_URL}/api${endpoint}`, { ...options, headers });
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -84,10 +90,10 @@ export const api = {
         return request<PaginatedResponse<Post>>(`/posts?${queryParams.toString()}`);
     },
     create: (formData: FormData) => 
-        request<Post>("/posts", { method: "POST", body: formData }, PostSchema),
+        request<Post>("/admin/posts", { method: "POST", body: formData }, PostSchema),
     createWithProgress: async (formData: FormData, onProgress: (percent: number) => void) => {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        const response = await axios.post(`${BASE_URL}/posts`, formData, {
+        const response = await axios.post(`${BASE_URL}/api/admin/posts`, formData, {
             headers: { Authorization: `Bearer ${token}` },
             onUploadProgress: (progressEvent) => {
                 const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
@@ -97,12 +103,17 @@ export const api = {
         return PostSchema.parse(response.data);
     },
     update: (slug: string, formData: FormData) => 
-        request<Post>(`/posts/s/${slug}`, {
+        request<Post>(`/admin/posts/${slug}`, {
             method: "PUT",
             body: formData,
         }, PostSchema),
+    delete: (slugOrId: string | number) => 
+        request<{message: string}>(`/admin/posts/${slugOrId}`, {
+            method: "DELETE"
+        }),
     slug: (slug: string) => request<Post>(`/posts/s/${slug}`, {}, PostSchema),
-    like: (slug: string) => request<void>(`/posts/s/${slug}/like`, { method: "POST" }),
+    like: (id: number) => request<{liked: boolean}>(`/user/posts/like/${id}`, { method: "POST" }),
+    categories: () => request<z.infer<typeof CategorySchema>[]>("/posts/categories", {}, z.array(CategorySchema)),
   },
   comments: {
     getByPost: (slug: string) => request<PostComment[]>(`/posts/s/${slug}/comments`),
@@ -112,8 +123,19 @@ export const api = {
         body: JSON.stringify({ content, parent_id: parentId })
       }),
   },
+  admin: {
+    createCategory: (name: string) => 
+        request<z.infer<typeof CategorySchema>>("/admin/categories", {
+            method: "POST",
+            body: JSON.stringify({ name })
+        }, CategorySchema),
+    deleteCategory: (id: number) => 
+        request<{message: string}>(`/admin/categories/${id}`, {
+            method: "DELETE"
+        }),
+  },
   auth: {
-    login: (credentials: LoginCredentials) => request<AuthResponse>("/login", { method: "POST", body: JSON.stringify(credentials) }),
-    register: (payload: RegisterPayload) => request<AuthResponse>("/register", { method: "POST", body: JSON.stringify(payload) }),
+    login: (credentials: LoginCredentials) => request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(credentials) }, AuthResponseSchema),
+    register: (payload: RegisterPayload) => request<AuthResponse>("/auth/register", { method: "POST", body: JSON.stringify(payload) }, AuthResponseSchema),
   }
 };

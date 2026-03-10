@@ -156,8 +156,8 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 func (h *PostHandler) UpdatePost(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetInt("user_id")
-
 	slug := c.Param("slug")
+
 	existingPost, err := h.postService.GetPostBySlug(slug)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
@@ -180,15 +180,30 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	if err == nil {
 		defer file.Close()
 
+		buff := make([]byte, 512)
+		file.Read(buff)
+		file.Seek(0, 0)
+		contentType := http.DetectContentType(buff)
+
+		allowed := map[string]bool{"image/jpeg": true, "image/png": true, "image/webp": true}
+		if !allowed[contentType] {
+			c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Invalid image type"})
+			return
+		}
+
 		ext := filepath.Ext(header.Filename)
 		Filename := fmt.Sprintf("%d-%s%s", time.Now().Unix(), uuid.New().String(), ext)
 		path := filepath.Join("uploads", Filename)
 
 		dst, _ := os.Create(path)
-		io.Copy(dst, file)
+		if _, err := io.Copy(dst, file); err != nil {
+			dst.Close()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
 		dst.Close()
 
-		post.ImageURL = "/iploads/" + Filename
+		post.ImageURL = "/uploads/" + Filename
 		go h.generateBlurHashInBackground(path, post.ID)
 
 		oldPath := filepath.Join(".", existingPost.ImageURL)
