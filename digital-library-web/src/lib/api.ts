@@ -50,6 +50,16 @@ export const PostSchema = z.object({
   og_image: z.string().optional(),
 });
 
+export const PaginatedPostSchema = z.object({
+  data: z.array(PostSchema).nullable().transform((val) => val ?? []),
+  meta: z.object({
+    current_page: z.number(),
+    limit: z.number(),
+    total_items: z.number(),
+    total_pages: z.number(),
+  }),
+});
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 async function request<T>(
@@ -87,7 +97,9 @@ export const api = {
         if (params.search) queryParams.append("search", params.search);
         if (params.page) queryParams.append("page", params.page.toString());
         if (params.limit) queryParams.append("limit", params.limit.toString());
-        return request<PaginatedResponse<Post>>(`/posts?${queryParams.toString()}`);
+    
+        const qs = queryParams.toString();
+        return request(`/posts/${qs ? `?${qs}` : ""}`, {}, PaginatedPostSchema);
     },
     create: (formData: FormData) => 
         request<Post>("/admin/posts", { method: "POST", body: formData }, PostSchema),
