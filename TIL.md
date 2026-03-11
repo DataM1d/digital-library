@@ -470,13 +470,13 @@ Phase 4: Security Hardening & The Defensive Layer 2026-02-27
     Lesson: `mu.Lock()` and `mu.Unlock()` are the traffic lights of go concurrency. They ensure only one goroutine can modify the IP to Limiter map at a time.
 
 4. Content Sanitization (XSS prevention)
-    What: Integrated the `bluemondat` library into the PostService.
+    What: Integrated the `bluemonday` library into the PostService.
 
     Why: Even with a secure login, an Adming could accidentally post content containing `<script> `tags that steal user cookies.
 
     Strategy: HTML gets washed in the Service layer before it hits the database.
 
-    Lesson: Never trust user input, even from an Admin. By using `bluemondat.UGCPOlicy()`, it strips out dangerous attributes like `onclick` or `onerror` while keeping safe tags like `<b>` and `<i>`.
+    Lesson: Never trust user input, even from an Admin. By using `bluemonday.UGCPOlicy()`, it strips out dangerous attributes like `onclick` or `onerror` while keeping safe tags like `<b>` and `<i>`.
 
 5. Production Ready HTTP Timeouts:
     What: Refactored `http.ListenAndServe` into a custom `http.Server` struct    with `ReadTimeout` and `WriteTimeout`.
@@ -834,7 +834,7 @@ phase 8: Content Managment: 2026-03-10
 
    The Fix: Since the Go backend returns a 409 or 500 error due to Foreign Key constraints, the frontend catch block now identifies this specific failure and alerts the user that the category is locked by active links.
 
-Phase 8 & 9: Admin Suite & Search Discovery: 20206-03-10
+Phase 8 & 9: Admin Suite & Search Discovery: 2026-03-10
 1. Zod & The Null vs Empty Array Trap:
    The Bug: Go slices declared as `var posts []models.Post` encode to `null` in JSON if empty. Zod expects an `array`, causing a frontend crash.
 
@@ -845,3 +845,31 @@ Phase 8 & 9: Admin Suite & Search Discovery: 20206-03-10
 2. Next.js image Optimization (400 Bad Request):
    External images (even from localhost:8080) must be whistelisted in next.config.ts under `remotePatterns`. Without this, the Next.js `Image` component refuses to process the source URL.
 
+Refactor: 2026-03-11
+1. Custom Hooks:
+   Instead of letting components fetch their own data or manage complex state, I moved everything into a dedicated `/hooks` directory.
+
+   Lesson: Components should only be responsible for the UI. The Logic belongs in hooks.
+
+2. Solving the Hydration Flicker:
+   Learned how to use a `mounted` state in `AuthContext` to prevent Next.js from throwing erros when accessing `localStorage`.
+
+   Key Concept: 
+   The server does not have a `window` or `localStorage`. By waiting for useEffect to set `mounted = true`, client and server agree what to render.
+
+3. Stability with `useCallback`:
+   Fixed the infinite Loop bug in the `useEffect` by wrapping fetch functions in `useCallback`.
+
+   Lesson:
+   If a function is a dependency in `useEffect`, it must be stable. Otherwise, React re creates the function on every render, triggering the effect again and again
+
+4. Type Aligment (Go <-> TypeScript): 
+   Encountered the strictness of Typescript interfaces when they did not match the go JSON output.
+
+   Strategy: 
+   `PaginationMeta` to match the Go struct naming (`total_items` vs `total`).
+
+   Lesson:
+   Use optional properties `?` in interfaces for metadata (like `created_at`) that is not always returned by light API versions.
+
+   
