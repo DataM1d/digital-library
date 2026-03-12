@@ -872,4 +872,34 @@ Refactor: 2026-03-11
    Lesson:
    Use optional properties `?` in interfaces for metadata (like `created_at`) that is not always returned by light API versions.
 
-   
+Refactor: Fullstack Synchronization. Slug, Services and State: 2026-03-12
+1. Slug vs ID Dillema (backend):
+   Problem: 
+   The frontend uses Slugs(strings) for URLs, but the database needs IDS (integers) for relations.
+
+   Solution:
+   Instead of making the Handler do database lookups, i injected the `PostRepository` into the `CommentService`. The service now resolves the slug to an ID before performing comment operations.
+
+   Lesson:
+   Keep Handlers lean. Logic like find the ID for this slug belongs in the Service layer.
+
+2. Dependency Injection (Go)
+   I mastered how to wire up complex dependencies in main.go.
+
+   Concept: CommentService now depends on both CommentRepo and PostRepo.
+
+   The Win: By passing the PostRepo into the CommentService constructor, I enabled cross-repository data fetching without creating circular dependencies. 
+
+3. Hook API Alignment (Frontend):
+   I refactored the frontend to be completely logic less at the component level.
+
+   Strategy: 
+   The `usecomments` hook now encapsulates the entire lifecycle (loading, submitting and re fetching).
+
+   Discovery: 
+   I realized that if the Hook, the API client, and the Backend Routes don't share the exact same parameter types (string vs number), the whole system breaks. Aligment is key.
+
+4. Recursive UI Components
+   Implemented a recursive `Comment` component to handle threaded discussions.
+
+   The Lesson: React components can call themselves! This is the most efficient way to render tree like structures (comments and replies) without knowing the depth of the thread in advance.
