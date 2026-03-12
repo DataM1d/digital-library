@@ -30,7 +30,11 @@ func (h *CommentHandler) GetByPost(c *gin.Context) {
 
 func (h *CommentHandler) Create(c *gin.Context) {
 	slug := c.Param("slug")
-	userID := c.GetInt("user_id")
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
 
 	var input struct {
 		Content  string `json:"content" binding:"required"`
@@ -43,7 +47,7 @@ func (h *CommentHandler) Create(c *gin.Context) {
 	}
 
 	comment := &models.Comment{
-		UserID:   userID,
+		UserID:   userID.(int),
 		Content:  input.Content,
 		ParentID: input.ParentID,
 	}
