@@ -903,3 +903,15 @@ Refactor: Fullstack Synchronization. Slug, Services and State: 2026-03-12
    Implemented a recursive `Comment` component to handle threaded discussions.
 
    The Lesson: React components can call themselves! This is the most efficient way to render tree like structures (comments and replies) without knowing the depth of the thread in advance.
+
+5. The Multipart Form Data Shift:
+   Problem: Standard JSON payloads cannot transmit binary image files alongside structured data (tags, categories) in a single request.
+
+   Solution: Switched the entire Post creation/update flow to multipart/form-data.
+
+   The Lesson: When handling files, you have to manually parse the form in Go using c.Request.ParseMultipartForm. You also have to be careful with arrays—standard PostForm only grabs the first value, so c.Request.MultipartForm.Value["tags"] is required to catch the full list of tags.
+
+6. Asynchronous Performance (BlurHash):
+   Concept: Generating a BlurHash is CPU intensive and shouldn't block the user from seeing a "Success" message.
+
+   The Win: Used Go's Goroutines (go h.generateBlurHashInBackground(...)) to process the image and update the database in the background. This keeps the API response time under 100ms while still providing a premium UI experience.
