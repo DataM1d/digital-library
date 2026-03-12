@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/DataM1d/digital-library/internal/models"
 	"github.com/DataM1d/digital-library/internal/service"
@@ -17,35 +16,42 @@ func NewCommentHandler(s *service.CommentService) *CommentHandler {
 	return &CommentHandler{service: s}
 }
 
-func (h *CommentHandler) CreateComment(c *gin.Context) {
-	postID, _ := strconv.Atoi(c.Param("id"))
+func (h *CommentHandler) GetByPost(c *gin.Context) {
+	slug := c.Param("slug")
+
+	comments, err := h.service.GetCommentsByPostSlug(slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch commentx"})
+		return
+	}
+
+	c.JSON(http.StatusOK, comments)
+}
+
+func (h *CommentHandler) Create(c *gin.Context) {
+	slug := c.Param("slug")
 	userID := c.GetInt("user_id")
 
-	var comment models.Comment
-	if err := c.ShouldBindJSON(&comment); err != nil {
+	var input struct {
+		Content  string `json:"content" binding:"required"`
+		ParentID *int   `json:"parent_id"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	comment.PostID = postID
-	comment.UserID = userID
+	comment := &models.Comment{
+		UserID:   userID,
+		Content:  input.Content,
+		ParentID: input.ParentID,
+	}
 
-	if err := h.service.AddComment(&comment); err != nil {
+	if err := h.service.CreateCommentBySlug(slug, comment); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, comment)
-}
-
-func (h *CommentHandler) GetComments(c *gin.Context) {
-	postID, _ := strconv.Atoi(c.Param("id"))
-
-	comments, err := h.service.GetPostComments(postID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, comments)
 }

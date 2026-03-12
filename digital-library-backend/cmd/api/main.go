@@ -34,14 +34,17 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)
 	catRepo := repository.NewCategoryRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	postService := service.NewPostService(postRepo)
 	catService := service.NewCategoryService(catRepo)
+	commentService := service.NewCommentService(commentRepo, postRepo)
 
 	authHandler := handlers.NewAuthHandler(userService)
 	postHandler := handlers.NewPostHandler(postService)
 	catHandler := handlers.NewCategoryHandler(catService)
+	commentHandler := handlers.NewCommentHandler(commentService)
 
 	r := gin.Default()
 	r.Use(middleware.CORSMiddleware())
@@ -64,6 +67,7 @@ func main() {
 			posts.GET("/", postHandler.GetPosts)
 			posts.GET("/s/:slug", postHandler.GetBySlug)
 			posts.GET("/categories", catHandler.GetCategories)
+			posts.GET("/s/:slug/comments", commentHandler.GetByPost)
 		}
 
 		user := api.Group("/user")
@@ -71,6 +75,7 @@ func main() {
 		{
 			user.POST("/posts/like/:id", postHandler.ToggleLike)
 			user.GET("/liked", postHandler.GetMyLikedPosts)
+			user.POST("/posts/s/:slug/comments", commentHandler.Create)
 		}
 
 		admin := api.Group("/admin")

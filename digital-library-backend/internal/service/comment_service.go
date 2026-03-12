@@ -8,21 +8,41 @@ import (
 )
 
 type CommentService struct {
-	repo *repository.CommentRepository
+	repo     *repository.CommentRepository
+	postRepo *repository.PostRepository //For slug lookups
 }
 
-func NewCommentService(repo *repository.CommentRepository) *CommentService {
-	return &CommentService{repo: repo}
-}
-
-func (s *CommentService) AddComment(c *models.Comment) error {
-	if c.Content == "" {
-		return errors.New("comment content cannot be empty")
+func NewCommentService(repo *repository.CommentRepository, postRepo *repository.PostRepository) *CommentService {
+	return &CommentService{
+		repo:     repo,
+		postRepo: postRepo,
 	}
-	return s.repo.Create(c)
 }
 
-func (s *CommentService) GetPostComments(postID int) ([]models.Comment, error) {
+func (s *CommentService) GetCommentsByPostSlug(slug string) ([]models.Comment, error) {
+	post, err := s.postRepo.GetBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildCommentTree(post.ID)
+}
+
+func (s *CommentService) CreateCommentBySlug(slug string, comment *models.Comment) error {
+	if comment.Content == "" {
+		return errors.New("Comment content cannot be empty!")
+	}
+
+	post, err := s.postRepo.GetBySlug(slug)
+	if err != nil {
+		return err
+	}
+
+	comment.PostID = post.ID
+	return s.repo.Create(comment)
+}
+
+func (s *CommentService) buildCommentTree(postID int) ([]models.Comment, error) {
 	flatComments, err := s.repo.GetByPostID(postID)
 	if err != nil {
 		return nil, err
