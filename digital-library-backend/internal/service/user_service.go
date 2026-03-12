@@ -36,15 +36,20 @@ func (s *UserService) Register(username, email, password string) (*models.User, 
 	return user, nil
 }
 
-func (s *UserService) Login(email, password string) (string, error) {
+func (s *UserService) Login(email, password string) (string, *models.User, error) {
 	user, err := s.repo.GetByEmail(email)
 	if err != nil {
-		return "", errors.New("invalid email or password")
+		return "", nil, errors.New("invalid email or password")
 	}
 
 	if !utils.CheckPassword(password, user.PasswordHash) {
-		return "", errors.New("invalid email or password")
+		return "", nil, errors.New("invalid email or password")
 	}
 
-	return utils.GenerateToken(user.ID, user.Role)
+	token, err := utils.GenerateToken(user.ID, user.Role)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return token, user, nil
 }
