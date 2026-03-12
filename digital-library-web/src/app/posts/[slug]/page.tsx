@@ -1,70 +1,40 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { api } from "@/lib/api";
-import { Post } from "@/types";
+import { use } from "react";
+import { usePostDetail } from "@/hooks/usePostDetail";
 import { CategoryPill } from "@/components/discovery/CategoryPill";
 import { CommentSection } from "@/components/social/CommentSection";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Heart, Calendar, User } from "lucide-react";
+import { ArrowLeft, Heart, Calendar, User, Loader2 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export default function PostDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [likesCount, setLikesCount] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
 
-  useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const data = await api.posts.slug(slug);
-        setPost(data);
-        setLikesCount(data.like_count);
-      } catch (err) {
-        setError("Archive not found or server error.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPost();
-  }, [slug]);
+  const { post, loading, error, likesCount, isLiked, toggleLike } = usePostDetail(slug);
 
-  const handleLike = async () => {
-    if (!post) return;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
+        <Loader2 className="h-8 w-8 animate-spin text-zinc-400 dark:text-zinc-600" />
+      </div>
+    );
+  }
 
-    const prevCount = likesCount;
-    const prevStatus = isLiked;
-
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-    setIsLiked(!isLiked);
-
-    try {
-      await api.posts.like(post.slug);
-    } catch (err) {
-      setLikesCount(prevCount);
-      setIsLiked(prevStatus);
-      console.error(err);
-    }
-  };
-
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-300 border-t-black dark:border-zinc-700 dark:border-t-white" />
-    </div>
-  );
-
-  if (error || !post) return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-black p-4">
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">{error}</h1>
-      <Link href="/" className="text-black underline dark:text-white">Return to Discovery</Link>
-    </div>
-  );
+  if (error || !post) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-black p-4 text-center">
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">
+          {error || "Artifact not found"}
+        </h1>
+        <Link href="/" className="text-sm font-medium text-black underline underline-offset-4 dark:text-white">
+          Return to Archive
+        </Link>
+      </div>
+    );
+  }
 
   const imageUrl = post.image_url.startsWith("http") 
     ? post.image_url 
@@ -72,8 +42,12 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
 
   return (
     <main className="min-h-screen bg-zinc-50 pb-20 dark:bg-black">
+      {/* Navigation */}
       <nav className="mx-auto max-w-4xl px-6 py-8">
-        <Link href="/" className="group inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors">
+        <Link 
+          href="/" 
+          className="group inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors"
+        >
           <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
           Back to Archive
         </Link>
@@ -100,8 +74,9 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
               </div>
               <span>Archived by User #{post.created_by}</span>
             </div>
+
             <button 
-              onClick={handleLike}
+              onClick={toggleLike}
               className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-all transform active:scale-95 ${
                 isLiked 
                 ? "bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20 dark:border-red-800" 
@@ -130,10 +105,10 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
           </p>
         </div>
 
-       <section className="border-t border-zinc-200 pt-10 dark:border-zinc-800">
+        <section className="border-t border-zinc-200 pt-10 dark:border-zinc-800">
           <h3 className="text-2xl font-bold mb-8 text-zinc-900 dark:text-white">Discussion</h3>
           <CommentSection postSlug={slug} />
-       </section>
+        </section>
       </article>
     </main>
   );

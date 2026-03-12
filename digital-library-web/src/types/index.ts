@@ -61,8 +61,30 @@ export interface PaginatedResponse<T> {
     };
 }
 
+export interface PaginationMeta {
+  current_page: number;
+  total_items: number;
+  total_pages: number;
+  limit: number;
+}
+
 export interface AuthResponse {
     token: string;
     user?: User;
 }
 
+
+export interface Category {
+    id: number;
+    name: string;
+    slug: string;
+    description?: string;
+    post_count?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface CategoryPayload {
+  name: string;
+  description?: string;
+}

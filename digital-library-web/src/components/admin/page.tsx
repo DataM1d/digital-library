@@ -1,129 +1,141 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Post } from "@/types";
-import { toast } from "sonner";
-import { Loader2, ArrowLeft, Save } from "lucide-react";
+import { CategoryManager } from "@/components/admin/CategoryManager";
+import { 
+  Plus, 
+  ExternalLink, 
+  Pencil, 
+  Trash2, 
+  Loader2, 
+  FileText 
+} from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { toast } from "sonner";
 
-export default function EditPostPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = use(params);
-    const router = useRouter();
-    const [post, setPost] = useState<Post | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-    useEffect(() => {
-        const loadPost = async () => {
-            try {
-                const data = await api.posts.slug(slug);
-                setPost(data);
-            } catch (err) {
-                toast.error("Artifact not found");
-                router.push("/admin");
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadPost();
-    }, [slug, router]);
+export default function AdminDashboard() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!post) return;
-        
-        setIsSaving(true);
-        const formData = new FormData(e.currentTarget);
-        
-        try {
-            await api.posts.update(slug, formData);
-            toast.success("Artifact updated successfully");
-            router.push("/admin");
-            router.refresh();
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : "Update failed";
-            toast.error(errorMessage);
-        } finally {
-            setIsSaving(false);
-        }
-    };
+  const fetchPosts = async () => {
+    try {
+      const response = await api.posts.list({ limit: 100 });
+      setPosts(response.data);
+    } catch (err) {
+      toast.error("Failed to load artifacts");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (loading) return (
-        <div className="flex h-screen items-center justify-center">
-            <Loader2 className="animate-spin text-zinc-500" size={32} />
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to purge this artifact?")) return;
+    try {
+      await api.posts.delete(id);
+      toast.success("Artifact purged");
+      setPosts(posts.filter(p => p.id !== id));
+    } catch (err) {
+      toast.error("Failed to delete");
+      console.error(err);
+    }
+  };
+
+  const getImageUrl = (url: string) => {
+    if (!url) return "/placeholder.jpg";
+    return url.startsWith("http") ? url : `${API_URL}${url}`;
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto py-12 px-6 space-y-12">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Archive Control</h1>
+          <p className="text-zinc-500 mt-1">Manage your digital collection and taxonomy.</p>
         </div>
-    );
+        <Link 
+          href="/admin/create" 
+          className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-black/5"
+        >
+          <Plus size={20} />
+          New Artifact
+        </Link>
+      </header>
 
-    return (
-        <div className="max-w-4xl mx-auto py-12 px-6">
-            <Link href="/admin" className="flex items-center gap-2 text-zinc-500 hover:text-black mb-8 transition-colors">
-                <ArrowLeft size={20} />
-                Back to Dashboard
-            </Link>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="lg:col-span-8 space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 mb-6 flex items-center gap-2">
+            <FileText size={16} />
+            Stored Artifacts ({posts.length})
+          </h2>
 
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Edit Artifact</h1>
-                <p className="text-zinc-500 font-mono text-sm mt-1">{post?.slug}</p>
-            </header>
-
-            <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Title</label>
-                    <input 
-                        name="title"
-                        defaultValue={post?.title}
-                        className="w-full px-4 py-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all"
-                        required
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Content (Markdown)</label>
-                    <textarea 
-                        name="content"
-                        defaultValue={post?.content}
-                        rows={12}
-                        className="w-full px-4 py-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 font-mono text-sm focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all"
-                        required
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Visibility Status</label>
-                        <select 
-                            name="status" 
-                            defaultValue={post?.status}
-                            className="w-full px-4 py-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 outline-none appearance-none cursor-pointer"
-                        >
-                            <option value="published">Published</option>
-                            <option value="draft">Draft</option>
-                        </select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Update Media (Optional)</label>
-                        <input 
-                            type="file"
-                            name="image"
-                            accept="image/*"
-                            className="w-full px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 text-sm"
-                        />
-                    </div>
-                </div>
-
-                <button 
-                    type="submit" 
-                    disabled={isSaving}
-                    className="flex items-center justify-center gap-2 w-full py-5 bg-black dark:bg-white text-white dark:text-black rounded-3xl font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-xl shadow-black/5"
+          {loading ? (
+            <div className="flex py-20 justify-center">
+              <Loader2 className="animate-spin text-zinc-300" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {posts.map((post) => (
+                <div 
+                  key={post.id} 
+                  className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl group hover:shadow-md transition-all"
                 >
-                    {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                    Push Changes to Archive
-                </button>
-            </form>
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden relative border border-zinc-100 dark:border-zinc-700">
+                       <Image 
+                        src={getImageUrl(post.image_url)} 
+                        alt={post.title}
+                        fill
+                        sizes="56px"
+                        className="object-cover transition-transform group-hover:scale-105"
+                       />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-zinc-900 dark:text-zinc-100">{post.title}</h3>
+                      <p className="text-xs font-mono text-zinc-500">{post.slug}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Link 
+                      href={`/posts/${post.slug}`} 
+                      target="_blank"
+                      className="p-2 text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                    >
+                      <ExternalLink size={18} />
+                    </Link>
+                    <Link 
+                      href={`/admin/edit/${post.slug}`} 
+                      className="p-2 text-zinc-400 hover:text-blue-500 transition-colors"
+                    >
+                      <Pencil size={18} />
+                    </Link>
+                    <button 
+                      onClick={() => handleDelete(post.id)}
+                      className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-    );
+
+        <div className="lg:col-span-4">
+          <CategoryManager />
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,44 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
-import { PostComment } from "@/types";
+import { useState } from "react";
+import { useComments } from "@/hooks/useComments";
 import { Comment as CommentItem } from "./Comment";
 import { Send } from "lucide-react";
 
 export function CommentSection({ postSlug }: { postSlug: string }) {
-  const [comments, setComments] = useState<PostComment[]>([]);
+  const { comments, addComment, isSubmitting, isLoading } = useComments(postSlug);
   const [newComment, setNewComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    const fetchComments = async () => {
-        try {
-            const data = await api.comments.getByPost(postSlug);
-            setComments(data);
-        } catch (err) {
-            console.error("Failed to load comments:", err);
-        }
-    };
-    fetchComments();
-  }, [postSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    setIsSubmitting(true);
     try {
-        const created: PostComment = await api.comments.create(postSlug, newComment);
-        setComments((prev: PostComment[]) => [created, ...prev]);
-        setNewComment("");
+      await addComment(newComment);
+      setNewComment("");
     } catch (err) {
-        alert("You must be logged in to comment.");
-        console.error("Failed to create comment:", err);
-    } finally {
-        setIsSubmitting(false);
+      console.error(err);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-32 bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
+        <div className="space-y-3">
+          <div className="h-4 bg-zinc-100 dark:bg-zinc-900 rounded w-1/4" />
+          <div className="h-4 bg-zinc-100 dark:bg-zinc-900 rounded w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -64,7 +57,9 @@ export function CommentSection({ postSlug }: { postSlug: string }) {
             <CommentItem key={comment.id} comment={comment} />
           ))
         ) : (
-          <p className="text-sm text-zinc-500 text-center py-10">No thoughts archived yet. Be the first.</p>
+          <p className="text-sm text-zinc-500 text-center py-10">
+            No thoughts archived yet. Be the first.
+          </p>
         )}
       </div>
     </div>

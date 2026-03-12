@@ -7,9 +7,10 @@ import { Heart, MessageCircle, ArrowUpRight } from "lucide-react";
 
 interface PostCardProps {
   post: Post;
+  priority?: boolean;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, priority = false }: PostCardProps) {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
   const imageUrl = post.image_url.startsWith("http")
     ? post.image_url
@@ -22,6 +23,7 @@ export function PostCard({ post }: PostCardProps) {
           src={imageUrl}
           alt={post.title}
           fill
+          priority={priority}
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />

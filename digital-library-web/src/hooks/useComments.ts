@@ -4,16 +4,22 @@ import { PostComment } from "@/types";
 
 export function useComments(postSlug: string) {
   const [comments, setComments] = useState<PostComment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchComments = useCallback(async () => {
+    if (!postSlug) return;
     try {
+      setIsLoading(true);
+      // Now using postSlug correctly
       const data = await api.comments.getByPost(postSlug);
       setComments(data);
     } catch (err) {
-      console.error("Failed to load comments", err);
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [postSlug]); 
+  }, [postSlug]);
 
   useEffect(() => {
     fetchComments();
@@ -23,11 +29,19 @@ export function useComments(postSlug: string) {
     setIsSubmitting(true);
     try {
       await api.comments.create(postSlug, content, parentId);
-      await fetchComments(); // Refresh list
+      await fetchComments();
+    } catch (err) {
+      console.error(err);
+      throw err;
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
 
-  return { comments, addComment, isSubmitting };
-}
+  return {
+    comments,
+    isLoading,
+    isSubmitting,
+    addComment,
+    };
+ }

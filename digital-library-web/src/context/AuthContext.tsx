@@ -19,9 +19,11 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false); // To prevent hydration flicker
   const router = useRouter();
 
   useEffect(() => {
+    setMounted(true);
     const initAuth = () => {
       try {
         const token = localStorage.getItem("token");
@@ -29,13 +31,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (token && savedUser) {
           const parsedUser = JSON.parse(savedUser);
-          const validatedUser = UserSchema.parse(parsedUser);
-          setUser(validatedUser);
+          const validateUser = UserSchema.parse(parsedUser);
+          setUser(validateUser);
         }
       } catch (error) {
-        console.error("Auth initialization failed:", error);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        localStorage.clear();
+        console.log(error)
       } finally {
         setLoading(false);
       }
@@ -47,7 +48,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("token", res.token);
     if (res.user) {
       localStorage.setItem("user", JSON.stringify(res.user));
-      setUser(res.user);
+      setUser(res.user); 
+    } else {
+      localStorage.removeItem("user");
+      setUser(null);
     }
     router.push("/");
   };
@@ -66,29 +70,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    router.refresh(); // Refresh to clear any cached data
     router.push("/login");
   };
 
+  const value = { user, loading, login, register, logout, isAuthenticated: !!user };
+
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading, 
-        login, 
-        register, 
-        logout, 
-        isAuthenticated: !!user 
-      }}
-    >
-      {!loading && children}
+    <AuthContext.Provider value={value}>
+      {mounted ? children : null}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (context === undefined) throw new Error("useAuth must be used within an AuthProvider");
   return context;
-};
+}
