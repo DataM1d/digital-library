@@ -47,12 +47,13 @@ func main() {
 	commentHandler := handlers.NewCommentHandler(commentService)
 
 	r := gin.Default()
+	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 	r.Use(middleware.CORSMiddleware())
 
 	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
-		os.Mkdir("./uploads", 0755)
+		os.MkdirAll("./uploads", 0755)
 	}
-	r.Static("/uploads", "./uploads")
+	r.Static("/uploads", "./uploads") //Static file serving for <Image /> tag
 
 	api := r.Group("/api")
 	{
