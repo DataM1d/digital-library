@@ -21,7 +21,7 @@ export function PostCard({ post, priority = false }: PostCardProps) {
       <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-900">
         <ImageWithFallback
           src={imageUrl}
-          alt={post.title}
+          alt={post.alt_text || post.title}
           fill
           priority={priority}
           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -30,37 +30,41 @@ export function PostCard({ post, priority = false }: PostCardProps) {
         
         <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         
-        <div className="absolute top-4 right-4 translate-y-2.5 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white">
-            <ArrowUpRight size={18} />
+      <div className="absolute top-4 right-4 -translate-y-2 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-xl text-white border border-white/20 shadow-2xl">
+            <ArrowUpRight size={20} />
           </div>
         </div>
       </div>
 
-      <div className="mt-4 space-y-1 px-1">
+       <div className="mt-5 space-y-2 px-1">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
             {post.category_name}
           </span>
-          <div className="flex items-center gap-3 text-zinc-400">
-            <span className="flex items-center gap-1 text-xs">
-              <Heart size={14} className={post.like_count > 0 ? "fill-red-500 text-red-500" : ""} />
+          <div className="flex items-center gap-3 text-zinc-400 font-bold">
+            <span className="flex items-center gap-1 text-[11px]">
+              <Heart 
+                size={14} 
+                className={post.like_count > 0 ? "fill-red-500 text-red-500" : "transition-colors group-hover:text-zinc-600"} 
+              />
               {post.like_count}
             </span>
-            <span className="flex items-center gap-1 text-xs">
-              <MessageCircle size={14} />
+            <span className="flex items-center gap-1 text-[11px]">
+              <MessageCircle size={14} className="transition-colors group-hover:text-zinc-600" />
               {post.comments?.length || 0}
             </span>
           </div>
+       </div>
+        
+       <div>
+          <h3 className="line-clamp-1 text-base font-bold tracking-tight text-zinc-900 dark:text-white transition-colors group-hover:text-zinc-500 dark:group-hover:text-zinc-400">
+            {post.title}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400 font-medium">
+            {post.meta_description || post.content}
+          </p>
         </div>
-        
-        <h3 className="line-clamp-1 text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
-          {post.title}
-        </h3>
-        
-        <p className="line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-          {post.meta_description || post.content.substring(0, 100)}
-        </p>
       </div>
     </Link>
   );

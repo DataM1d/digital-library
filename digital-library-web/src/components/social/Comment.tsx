@@ -1,35 +1,59 @@
+"use client";
+
 import { PostComment as CommentType } from "@/types";
-import { User } from "lucide-react";
+import { User, CornerDownRight } from "lucide-react";
 
 interface CommentProps {
   comment: CommentType;
+  isReply?: boolean;
 }
 
-export function Comment({ comment }: CommentProps) {
-    return (
-        <div className="group flex flex-col space-y-3 border-l-2 border-zinc-100 pl-4 py-2 dark:border-zinc-800 transition-colors hover:border-zinc-200">
-            <div className="flex items-center gap-2 text-sm text-zinc-500">
-                <div className="h-6 w-6 rounded-full bg-zinc-200 flex items-center justify-center dark:bg-zinc-800">
-                    <User size={12} />
+export function Comment({ comment, isReply = false }: CommentProps) {
+  const formattedDate = new Date(comment.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  
+  
+  return (
+    <div className={`group flex flex-col space-y-3 transition-all ${
+      isReply ? "mt-4 ml-2" : "mt-8"
+    }`}>
+        <div className="flex items-start gap-4">
+            <div className="flex fle-col items-center">
+                <div className="flex h-8 2-8 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-800/50">
+                <User size={16} />
                 </div>
-                <span className="font-medium text-zinc-900 dark:text-white">
-                    User #{comment.user_id}
-                </span>
-                <span>•</span>
-                <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+                {comment.replies && comment.replies.length > 0 && (
+                    <div className="w-px flex-1 bg-zinc-200 dark:bg-zinc-800 my-2" />
+                )}
             </div>
 
-            <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">
-                {comment.content}
-            </p>
+            <div className="flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">
+              Collector #{comment.user_id}
+            </span>
+            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+              • {formattedDate}
+            </span>
+          </div>
 
-            {comment.replies && comment.replies.length > 0 && (
-                <div className="mt-4 space-y-4">
-                    {comment.replies?.map((reply: CommentType) => (
-                      <Comment key={reply.id} comment={reply} />
-                    ))}
-                </div>
-            )}
+          {comment.replies && comment.replies.length > 0 && (
+            <div className="relative pl-2">
+              <div className="absolute left-4.5 top-4 text-zinc-300 dark:text-zinc-700">
+                <CornerDownRight size={16} />
+              </div>
+              <div className="space-y-2">
+                {comment.replies.map((reply) => (
+                  <Comment key={reply.id} comment={reply} isReply={true} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-    )
+      </div>
+    </div>
+  );
 }

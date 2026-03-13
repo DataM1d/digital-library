@@ -1,35 +1,69 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Post } from "@/types";
 import { CategoryPill } from "./CategoryPill";
+import { Heart, Calendar, ArrowUpRight } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export function PostCard({ post }: { post: Post }) {
-    const imageUrl = post.image_url.startsWith("http") 
+interface PostCardProps {
+  post: Post;
+}
+
+export function PostCard({ post }: PostCardProps) {
+  const imageUrl = post.image_url.startsWith("http") 
     ? post.image_url 
     : `${API_URL}${post.image_url}`;
-    return (
-    <Link href={`/posts/${post.slug}`} className="group flex flex-col space-y-3">
-      <div className="relative aspect-16/10 overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-800">
+
+  const formattedDate = new Date(post.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+  return (
+    <Link href={`/posts/${post.slug}`} className="group flex flex-col space-y-4">
+      {/* Media Frame */}
+      <div className="relative aspect-16/10 overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50">
         <Image
           src={imageUrl}
-          alt={post.title}
+          alt={post.alt_text || post.title}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500 flex items-center justify-center">
+          <ArrowUpRight 
+            className="text-white opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0" 
+            size={32} 
+          />
+        </div>
       </div>
-      <div className="space-y-2">
+
+      <div className="space-y-3 px-1">
         <div className="flex items-center justify-between">
           <CategoryPill name={post.category_name} />
-          <span className="text-xs text-zinc-500 font-medium">❤️ {post.like_count}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+              <Calendar size={12} />
+              {formattedDate}
+            </div>
+            <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+              <Heart size={12} className={post.like_count > 0 ? "fill-red-500 text-red-500" : ""} />
+              {post.like_count}
+            </div>
+          </div>
         </div>
-        <h3 className="text-xl font-bold text-zinc-900 dark:text-white group-hover:underline decoration-2 underline-offset-4">{post.title}</h3>
-        <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+      <div className="space-y-1.5">
+          <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 transition-colors group-hover:text-zinc-500 dark:group-hover:text-zinc-400">
+            {post.title}
+          </h3>
+          <p className="line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
             {post.content}
-        </p>
+          </p>
+        </div>
       </div>
     </Link>
-    );
+  );
 }
