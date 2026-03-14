@@ -9,19 +9,24 @@ import (
 )
 
 type CommentHandler struct {
-	service service.CommentService
+	commentService service.CommentService
 }
 
 func NewCommentHandler(s service.CommentService) *CommentHandler {
-	return &CommentHandler{service: s}
+	return &CommentHandler{commentService: s}
 }
 
 func (h *CommentHandler) GetByPost(c *gin.Context) {
 	slug := c.Param("slug")
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Post identifier required"})
+		return
+	}
 
-	comments, err := h.service.GetCommentsByPostSlug(slug)
+	comments, err := h.commentService.GetCommentsByPostSlug(slug)
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch comments"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Comments not found for this artifact"})
 		return
 	}
 
@@ -30,10 +35,13 @@ func (h *CommentHandler) GetByPost(c *gin.Context) {
 
 func (h *CommentHandler) Create(c *gin.Context) {
 	slug := c.Param("slug")
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+	val, exists := c.Get("user_id")
+	userID, ok := val.(int)
+
+	if !exists || !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Session expired or invalid"})
 		return
+
 	}
 
 	var input struct {
@@ -42,18 +50,18 @@ func (h *CommentHandler) Create(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Comment content is required"})
 		return
 	}
 
 	comment := &models.Comment{
-		UserID:   userID.(int),
+		UserID:   userID,
 		Content:  input.Content,
 		ParentID: input.ParentID,
 	}
 
-	if err := h.service.CreateCommentBySlug(slug, comment); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.commentService.CreateComment(slug, comment); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

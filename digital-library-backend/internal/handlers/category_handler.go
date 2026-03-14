@@ -9,11 +9,11 @@ import (
 )
 
 type CategoryHandler struct {
-	service *service.CategoryService
+	categoryService service.CategoryService
 }
 
-func NewCategoryHandler(s *service.CategoryService) *CategoryHandler {
-	return &CategoryHandler{service: s}
+func NewCategoryHandler(s service.CategoryService) *CategoryHandler {
+	return &CategoryHandler{categoryService: s}
 }
 
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
@@ -26,9 +26,9 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 		return
 	}
 
-	cat, err := h.service.CreateCategory(input.Name)
+	cat, err := h.categoryService.CreateCategory(input.Name)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Category already exists or could not be created"})
+		c.JSON(http.StatusConflict, gin.H{"error": "Category already exists"})
 		return
 	}
 
@@ -36,9 +36,9 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 }
 
 func (h *CategoryHandler) GetCategories(c *gin.Context) {
-	cats, err := h.service.GetAllCategories()
+	cats, err := h.categoryService.GetAllCategories()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve archive taxonomy"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Taxonomy retrieval failed"})
 		return
 	}
 	c.JSON(http.StatusOK, cats)
@@ -51,10 +51,10 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteCategory(id); err != nil {
+	if err := h.categoryService.DeleteCategory(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Category removed from taxonomy"})
+	c.JSON(http.StatusOK, gin.H{"message": "Category removed"})
 }

@@ -8,15 +8,20 @@ import (
 	"github.com/DataM1d/digital-library/pkg/utils"
 )
 
-type UserService struct {
+type UserService interface {
+	Register(username, email, password string) (*models.User, error)
+	Login(email, password string) (string, *models.User, error)
+}
+
+type userService struct {
 	repo *repository.UserRepository
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo *repository.UserRepository) UserService {
+	return &userService{repo: repo}
 }
 
-func (s *UserService) Register(username, email, password string) (*models.User, error) {
+func (s *userService) Register(username, email, password string) (*models.User, error) {
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		return nil, err
@@ -36,7 +41,7 @@ func (s *UserService) Register(username, email, password string) (*models.User, 
 	return user, nil
 }
 
-func (s *UserService) Login(email, password string) (string, *models.User, error) {
+func (s *userService) Login(email, password string) (string, *models.User, error) {
 	user, err := s.repo.GetByEmail(email)
 	if err != nil {
 		return "", nil, errors.New("invalid email or password")

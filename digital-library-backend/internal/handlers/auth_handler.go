@@ -8,10 +8,10 @@ import (
 )
 
 type AuthHandler struct {
-	userService *service.UserService
+	userService service.UserService
 }
 
-func NewAuthHandler(s *service.UserService) *AuthHandler {
+func NewAuthHandler(s service.UserService) *AuthHandler {
 	return &AuthHandler{userService: s}
 }
 
@@ -33,7 +33,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, user)
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Registration successful",
+		"user": gin.H{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+		},
+	})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -47,11 +54,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.userService.Login(input.Email, input.Password)
+	token, user, err := h.userService.Login(input.Email, input.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+		"user": gin.H{
+			"id":       user.ID,
+			"username": user.Username,
+			"role":     user.Role,
+		},
+	})
 }

@@ -9,7 +9,7 @@ import (
 
 type CommentService interface {
 	GetCommentsByPostSlug(slug string) ([]models.Comment, error)
-	CreateCommentBySlug(slug string, comment *models.Comment) error
+	CreateComment(slug string, comment *models.Comment) error
 }
 
 type commentService struct {
@@ -33,7 +33,7 @@ func (s *commentService) GetCommentsByPostSlug(slug string) ([]models.Comment, e
 	return s.buildCommentTree(post.ID)
 }
 
-func (s *commentService) CreateCommentBySlug(slug string, comment *models.Comment) error {
+func (s *commentService) CreateComment(slug string, comment *models.Comment) error {
 	if comment.Content == "" {
 		return errors.New("comment content cannot be empty")
 	}
@@ -55,6 +55,7 @@ func (s *commentService) buildCommentTree(postID int) ([]models.Comment, error) 
 
 	commentMap := make(map[int]*models.Comment)
 	for i := range flatComments {
+		flatComments[i].Replies = []models.Comment{}
 		commentMap[flatComments[i].ID] = &flatComments[i]
 	}
 

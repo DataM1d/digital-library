@@ -953,3 +953,36 @@ Refactor: Go Backend Refactoring & Clean Architecture: 2026-03-13
    This structure matches the frontend expectations perfectly and makes the UI logic (like "Next/Prev" buttons) much cleaner.
 
    Structure: `{ "data": [...], "meta": { "current_page": 1, "total_items": 87, ... } }`
+
+Refactor: Go Backend Architecture Refactor: 2026-03-14
+1. Service Interface Pattern:
+   Decoupling:
+   Converted `UserService, PostService, CategoryService, and CommentService` into interfaces. Handlers now depend on abstractions rather than concrete implementations.
+
+   Encapsulation: 
+   Used unexported structs (e.g, `postService`) to enforce the use of constructor functions (`NewPostService`), ensuring consistent initialization.
+
+2. Robust Resource Managment:
+   Rate Limiter Memory Safety:
+   Implemented a background cleanup goroutine in the rate limiter to prune old IP entries and prevent memeory leaks.
+
+   Atomic Transactions: 
+   Integrated `WithTransaction` in PostService to ensure database integrity when syncing posts and tags simultaneously.
+
+   File System Hygiene: 
+   Added automated cleanup logic in `DeletePost` to remove physical image files when a database record is purged.
+
+3. Enhanced Security & Logic:
+   Recursive Data Handling:
+   Developed an efficient O(n) map based algorithm for building nested commen trees, avoiding expensive recursive SQL queries.
+
+   JWT Hardening: 
+   Updated middleware to explicitly validate signing methods (HMAC) and handle environment variables more safely.
+
+4. Handler Optimization:
+   Type Safety: 
+   Replaced unsafe type assertions with safe checks in `CommentHandler` to prevent server panics on invalid session data.
+
+   DRY Principles:
+   Extracted image processing logic in `PostHandler` into a helper method(`saveUploadedFile`) used by both Create and Update operations.
+
