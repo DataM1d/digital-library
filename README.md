@@ -1,83 +1,93 @@
-Digital Library API (v3)
+Digital Library API (v5)
 
- A clean, production ready Go backend for a curated digital archive. This project implements a high performance discovery engine with a focus on Gin Gonic efficiency, relational integrity and developer experience.
+A high performance, production ready Go backend for a curated digital archive. This version marks a transition to a Service Interface architecture, prioritizing testability, memory safety, and O(n) performance.
 
- System Architecture:
- The system follows a strict unidirectional data flow:
- `Handler (HTTP) -> Service (Logic) -> Repository (SQL).`  
+Recent Updates: The Architecture & Performance Hardening:
+   1. Service Interface Pattern: 
+   Fully decoupled the business logic layer. Handlers now interact with 
+   abstractions, allowing for 100% unit test coverage via mocking.
 
- This ensures that business rules like slug geneeration, NULL safety checks or permission assertions are never bypassed and remain easily testable.
+   2. High Performance Slug Engine: 
+   Replaced regex heavy logic with a manual single pass strings.Builder implementation, achieving O(n) time complexity with zero extra memory allocations.
 
-Recent Updates: The Gin & SQL Refactor:
- Gin Gonic Migration: Switched from Chi to Gin for high performance routing, better middleware grouping and native JSON binding.
+   3. Memory Safe Rate Limiting: 
+   Implemented a thread safe (Mutex) in memory rate limiter with a background cleanup goroutine to prevent memory leaks from stale IP tracking.
 
- Null Safe Scanning: Implemented `COALESCE` in the Repository layer to prevent GO `Scan` panics when encountering optional database fields.
+   4. Recursive Comment Trees:
+   Developed an efficient map based algorithm to transform flat SQL result sets into deeply nested JSON comment threads in linear time.
 
- Strict Relational Integrity: Updated schema with `NOT NULL` constraints and `RESTART IDENTITY` logic for clean testing environments.
+   5. Security Hardening:
+   JWT v5: Implemented RegisteredClaims (iat, nbf, sub) for auditability.
 
- Social & Discovery: Automates SEO Friendly slug generation and a standardized Like/Unlike system.
+   XSS Protection: Integrated bluemonday at the service layer for strict HTML sanitization.
+
+   Bcrypt Integrity: Added a 72 byte ceiling check to prevent password truncation issues.
 
 Tech Stack
-   Language: GO 1.21+
-   Router: Gin Gonic
-   Database: PostgreSQL
-   Auth: JWT & Bcrypt
-   Security: Bluemonday (HTML Sanitization) & Rate Limiting
-   Infrastructure: Docker & Docker Compose
+   Language: Go 1.21+
 
-Architecture & Design 
-   cmd/api/: Entry point for server initialization and graceful shutdown logic.
+   Router: Gin Gonic (Optimized for JSON Binding)
 
-   internal/handlers/: HTTP transport layer; parses JSON and handles status codes.
+   Database: PostgreSQL (Relational Integrity & ACID Transactions)
 
-   internal/service/: The "Brain" of the app; handles complex logic like recursive comment nesting and slug uniqueness.
+   Authentication: JWT (HS256) & Bcrypt
 
-   internal/repository/: Pure SQL layer; utilizes pg for performance and relational integrity.
+   Performance: golang.org/x/time/rate & strings.Builder
 
-   pkg/: Shared utilities (JWT management, password hashing, slug engines).
+   Sanitization: bluemonday (UGC Policy)
 
 
-Key Engineering Decisions
-   The COALESCE Strategy: 
-   To solve the `Scan NULL into int` error, all optional fields (like category_id or last_modified_by) use SQL COALESCE to provide safe defaults (e.g., ID 1) during retrieval.
+Architecture & Design
+   1. cmd/api/: Entry point; handles dependency injection and server lifecycle.
 
-   Context Based Auth: Middleware extracts User IDs from JWTs and injects them into the Gin context, allowing handlers to perform Role Based Access Control (RBAC) seamlessly.
-   
-   Atomic Transactions: Post creation uses `db.Begin()` to ensure the Post, Tags, and Categories are committed as a single unit no partial data corruption.
-   
-   Seed Control: Included a specialized seed.sql that uses TRUNCATE ... RESTART IDENTITY to ensure consistent IDs (1, 2, 3...) during development.
+   2. internal/handlers/: Transport layer; maps HTTP to service interfaces.
 
-API Endpoints
-   Authentication:
-| Method | Endpoint | Description | Access |
-| POST | `/register` | Create a new account | Public |
-| POST | `/login` | Get a JWT token | Public |
+   3. internal/service/: The "Brain"; enforces business rules, slug uniqueness,  
+   and sanitization.
 
-   Discovery 
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| GET | `/posts` | List posts (Search, Category, Tag filters) | Public |
-| GET | `/posts/s/{slug}`| Fetch a single post by clean URL | Public |
-| GET | `/posts/{id}/comments` | View the social feed for a post | Public |
+   4. internal/repository/: Data access; uses pure SQL with COALESCE for 
+   NULL safety.
 
-   Interaction
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| POST | `/upload` | Secure image upload with BlurHash gen | User |
-| POST | `/posts` | Create a new entry | Admin |
-| POST | `/posts/{id}/like` | Toggle Like/Unlike status | User |
-| POST | `/posts/{id}/comments`| Post a new comment | User |
+   5. internal/middleware/: Security layer; manages Auth and Memory Safe Rate 
+   Limiting.
 
-Quick Start
-   Clone & Setup:
-   git clone https://github.com/YourUsername/digital-library.git
-   cd digital-library
-   cp .env.example .env
+   6. pkg/utils/: Shared utilities; optimized for performance and security.
 
-Database Seeding:
-Execute scripts/seed.sql to populate the library with 50 sample entries and a default admin user.
+Key Engineering Decisions:
+   1. Linear Time Comment Nesting:
+   Instead of expensive recursive SQL queries (CTE), all the comments are fetched for a post in one query and build the tree in memory using a hash map. This reduces database load and ensures `O(n)` complexity.
 
-Launch:
-   docker-compose up --build
+   2. Standardized API Response Wrapper:
+   To ensure a consistent Developer Experience (DX) for frontend consumers, every endpoint returns a unified JSON structure:
 
-The Gin server will be available at http://localhost:8080.
+   3. The "Clean Slate" Seeding Strategy
+   `seed.sql` utilizes `TRUNCATE` ... `RESTART` `IDENTITY` `CASCADE` and a PL/pgSQL loop. This allows developers to generate 50+ posts with random categories and valid hierarchical comments in milliseconds for pagination testing.
+
+Environment: cp .env.example .env
+
+Database: Run scripts/seed.sql in your Postgres instance.
+
+Launch: go run cmd/api/main.go
+
+Frontend Architecture (Next.js 16):
+The companion frontend is built for speed and discovery, utilizing the latest React patterns to provide a seamless archival browsing experience.
+
+   Framework: Next.js 16 (App Router)
+
+   Styling: Tailwind CSS
+
+   State Management: React Query (TanStack) for synchronized server-state.
+
+   Icons: Lucide React
+
+   Components: Radix UI primitives for accessible modals and dropdowns.
+
+Key Frontend Features:
+   1. Optimistic UI: Likes and comments update instantly in the browser before the server confirms, ensuring a "zero latency" feel.
+
+   2. Dynamic Breadcrumbs: Automatically generated paths based on category slugs (e.g., Archive > Manuscripts > Gutenberg).
+
+   3. Responsive Masonry Grid: A custom CSS grid that adapts to different archival asset aspect ratios (Photography vs. Documents).
+
+   4. Skeleton Loading: Custom shimmer effects for a polished "content first" loading experience while the Go backend processes large datasets.
+
