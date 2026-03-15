@@ -1,93 +1,65 @@
-Digital Library API (v5)
+The Digital Archive: Full Stack Engineering Showcase
 
-A high performance, production ready Go backend for a curated digital archive. This version marks a transition to a Service Interface architecture, prioritizing testability, memory safety, and O(n) performance.
+A high performance, production ready full stack ecosystem designed for a curated digital arcvhive. This project demonstrates a transition to a Service Interface architecture in Go, paired with a modern Next.js16 CMS that prioritizes type safety, memory efficency, and sub 100ms response times.
+The project follows a Clean Architecture approach to ensure the business logic is independent of external frameworks.
 
-Recent Updates: The Architecture & Performance Hardening:
-   1. Service Interface Pattern: 
-   Fully decoupled the business logic layer. Handlers now interact with 
-   abstractions, allowing for 100% unit test coverage via mocking.
+Engineering Highlight.
+   1. High Performance Slug Engine (Go).
+   Replaced expensive regex heavy logic with a manual single pass `strings.Builder` implementation.
+      Impact: Achieved O(n) time complexity with zero extra heap allocations during string manipulation.
 
-   2. High Performance Slug Engine: 
-   Replaced regex heavy logic with a manual single pass strings.Builder implementation, achieving O(n) time complexity with zero extra memory allocations.
+      Why: Drastically reduces GC pressure in high traffic write scenarios.
 
-   3. Memory Safe Rate Limiting: 
-   Implemented a thread safe (Mutex) in memory rate limiter with a background cleanup goroutine to prevent memory leaks from stale IP tracking.
+   2. Linear Time Recursive Comment Trees.
+   Developed an efficient map based algorithm to transform flat SQL result sets into deeply nested JSON comment threads. 
+      Impact: Avoided expensive Recursive CTEs in SQL. By building the tree in memory using a hash map,  i reduced database overhead from O(n2) to 
+      O(n).
 
-   4. Recursive Comment Trees:
-   Developed an efficient map based algorithm to transform flat SQL result sets into deeply nested JSON comment threads in linear time.
+      Algorithm: One database trip -> Map pointer assigment -> Nested JSON output.
 
-   5. Security Hardening:
-   JWT v5: Implemented RegisteredClaims (iat, nbf, sub) for auditability.
+   3. Memory Safe Rate Limiting.
+   Implemented a thread safe `sync.Mutex` in memory rate limiter with a background cleanup goroutine.
+      Impact: Prevents memory leaks by automatically pruning stale IP tracking entries after a specified TTL.
 
-   XSS Protection: Integrated bluemonday at the service layer for strict HTML sanitization.
+      Security: Protects critical Archive endpoints without the overhead of Redis for single node deployments.
 
-   Bcrypt Integrity: Added a 72 byte ceiling check to prevent password truncation issues.
+   4. Advanced Frontend Data Flow (Next.js).
+   Implemented a robust Handshake between the Go API and React.
+      Type Safety: Integrated Zod at the network layer to validate API responses against TypeScript interfaces at runtime.
 
-Tech Stack
-   Language: Go 1.21+
+      Optimistic UI: Leveraged React state to provide instant feedback on Likes and Comments, synchronizing with the backend in the background to ensure a zero latency feel.
 
-   Router: Gin Gonic (Optimized for JSON Binding)
+Tech Stack.
+Backend (Go 1.22+)
+   Framework: Gin Gonic (optimized with custom JSON binding)
+   Architecture: Service Repository Pattern (fully decoupled for unit testing)
+   Security: JWT v5 (REgisteredClaims), bluemonday (UGC sanitization), Bcrypt(truncation safe)
+   Database: PostgreSQL (Atomic ACID transactions with COALAESCE for NULL safety)
 
-   Database: PostgreSQL (Relational Integrity & ACID Transactions)
+Frontend (Next.js 16)
+   Core: App Router, Server Actions and custom Hooks
+   State/Validation: TanStack Query & Zod.
+   UI/UX: Tailwind CSS, Framer Motion, Lucide, react-dropzone
+   Media: Custom Image Fallback systemn with blurHash support
 
-   Authentication: JWT (HS256) & Bcrypt
+installation & Setup
+1. Backend
+cp .env.example .env (Set your DB credentials and JWT Secret)
 
-   Performance: golang.org/x/time/rate & strings.Builder
+Run scripts/seed.sql to generate the archive taxonomy and 50+ test artifacts.
 
-   Sanitization: bluemonday (UGC Policy)
+go run cmd/api/main.go
 
+2. Frontend
+cd frontend && npm install
 
-Architecture & Design
-   1. cmd/api/: Entry point; handles dependency injection and server lifecycle.
+npm run dev
 
-   2. internal/handlers/: Transport layer; maps HTTP to service interfaces.
+Access at http://localhost:3000
 
-   3. internal/service/: The "Brain"; enforces business rules, slug uniqueness,  
-   and sanitization.
+Key Engineering Decisions.
+   The Clean Slate Seeding Strategy: Developed a PL/pgSQL loop that utilizes TRUNCATE ... RESTART IDENTITY CASCADE. This allows for a fresh development environment with valid hierarchial data in milleseconds. 
 
-   4. internal/repository/: Data access; uses pure SQL with COALESCE for 
-   NULL safety.
+   XSS & Security Hardening: Integrated bluemonday at the service layer rather than the handler. This ensures that even internal data syncs are sanitized before reaching the repository.
 
-   5. internal/middleware/: Security layer; manages Auth and Memory Safe Rate 
-   Limiting.
-
-   6. pkg/utils/: Shared utilities; optimized for performance and security.
-
-Key Engineering Decisions:
-   1. Linear Time Comment Nesting:
-   Instead of expensive recursive SQL queries (CTE), all the comments are fetched for a post in one query and build the tree in memory using a hash map. This reduces database load and ensures `O(n)` complexity.
-
-   2. Standardized API Response Wrapper:
-   To ensure a consistent Developer Experience (DX) for frontend consumers, every endpoint returns a unified JSON structure:
-
-   3. The "Clean Slate" Seeding Strategy
-   `seed.sql` utilizes `TRUNCATE` ... `RESTART` `IDENTITY` `CASCADE` and a PL/pgSQL loop. This allows developers to generate 50+ posts with random categories and valid hierarchical comments in milliseconds for pagination testing.
-
-Environment: cp .env.example .env
-
-Database: Run scripts/seed.sql in your Postgres instance.
-
-Launch: go run cmd/api/main.go
-
-Frontend Architecture (Next.js 16):
-The companion frontend is built for speed and discovery, utilizing the latest React patterns to provide a seamless archival browsing experience.
-
-   Framework: Next.js 16 (App Router)
-
-   Styling: Tailwind CSS
-
-   State Management: React Query (TanStack) for synchronized server-state.
-
-   Icons: Lucide React
-
-   Components: Radix UI primitives for accessible modals and dropdowns.
-
-Key Frontend Features:
-   1. Optimistic UI: Likes and comments update instantly in the browser before the server confirms, ensuring a "zero latency" feel.
-
-   2. Dynamic Breadcrumbs: Automatically generated paths based on category slugs (e.g., Archive > Manuscripts > Gutenberg).
-
-   3. Responsive Masonry Grid: A custom CSS grid that adapts to different archival asset aspect ratios (Photography vs. Documents).
-
-   4. Skeleton Loading: Custom shimmer effects for a polished "content first" loading experience while the Go backend processes large datasets.
-
+   Standardized API Response Wrapper: Designed a unified JSON structure for all endpoints (Data + Meta + Errors) to simplify frontend consumption and ensure consistent error handling.

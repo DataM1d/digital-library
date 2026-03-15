@@ -101,7 +101,7 @@ export default function PostDetailPage({ params }: { params: Promise<{ slug: str
           </div>
         </header>
 
-        <div className="relative aspect-16/9 w-full overflow-hidden rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900 mb-20 shadow-2xl shadow-zinc-200/50 dark:shadow-none">
+        <div className="relative aspect-video w-full overflow-hidden rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900 mb-20 shadow-2xl shadow-zinc-200/50 dark:shadow-none">
           <Image
             src={imageUrl}
             alt={post.title}
