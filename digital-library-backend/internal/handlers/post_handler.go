@@ -160,7 +160,8 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 
 	posts, meta, err := h.postService.GetAllPosts(category, search, tags, page, limit, role, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch posts"})
+		fmt.Printf("[SQL ERROR] GetAllPosts: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
