@@ -1020,3 +1020,40 @@ Go Backend, Interface Patterns: 2026-03-15
    Sanitization: 
    Integrated `bluemonday` in the service layer (not the handler) to ensure data is clean before it ever touches the database.
 
+Database Hardening: 2026-03-16
+1. Eliminating NULL Scan Conflicts:
+   What: 
+   Migrated database columns (alt_text, blur_hash, image_url, meta_description, og_image) from nullable to `NOT NULL` with empty string, defaults using `COALESCE` and `ALTER TABLE`.
+
+   Why: 
+   In Go scanning a SQL `NULL` into a standard `string` variable triggers a runtime error. By enforcing empty strings at the database level, i eliminate the need for sql.NullString pointers in models. Simplyfing the `PostRepository` logic and ensuring the frontend always receivs valid string.
+
+2. Repository Query Refinement:
+   What: 
+   Updated `internal/repository/post_repo.go` to synchronize with the new schema and optimized the SQL selection logic.
+
+   Why: 
+   To ensure the `Scan` process matches the hardened table structure. This prevents Scan error on column issues and ensures that optional metadata fields like `og_image` are always safely retrievable as strings, even if they have not been explicitly set by the curator.
+
+3. Handler Level Metadata Managment:
+   What:
+   Updated `internal/handlers//post_handler.go` to handle the new default values for metadata fields during artifact creation and updates.
+
+   Why: 
+   By ensuring the handler sends consistent data to the service layer, the integrity of the Archive is maintained. It allows the frontend to rely on these fields being present in every JSON response without needing complex null checks in the React components.
+
+4. Schema First Seeding:
+   What:
+   Updated `scripts/seed.sql` to include the `NOT NULL` constraints and default values for all initial artifacts.
+
+   Why: 
+   Ensures that any fresh environment (development or production) starts with the correct data architecture. This aligns the initial Digital Archive state with hardened Postgres constraints, preventing bugs that only appear after a database reset.
+
+5. Zod to DB Consistency:
+   What:
+   Aligned the Zod schemas in the frontend with the database defaults for metadata fields.
+
+   Why: 
+   By mmatching the frontend validation to the database constraints, unified Contract is created. The frontend knows exactly what the database will provide, and the database knows exactly what the frontend is allowed to send.
+
+   
