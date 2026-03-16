@@ -11,7 +11,6 @@ export function useComments(postSlug: string) {
     if (!postSlug) return;
     try {
       setIsLoading(true);
-      // Now using postSlug correctly
       const data = await api.comments.getByPost(postSlug);
       setComments(data);
     } catch (err) {

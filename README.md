@@ -1,6 +1,6 @@
 The Digital Archive: Full Stack Engineering Showcase
 
-A high performance, production ready full stack ecosystem designed for a curated digital arcvhive. This project demonstrates a transition to a Service Interface architecture in Go, paired with a modern Next.js16 CMS that prioritizes type safety, memory efficency, and sub 100ms response times.
+A high performance, production ready full stack ecosystem designed for a curated digital arcvhive. This project demonstrates a transition to a Service Interface architecture in Go, paired with a modern Next.js 15+ CMS that prioritizes type safety, memory efficency, and sub 100ms response times.
 The project follows a Clean Architecture approach to ensure the business logic is independent of external frameworks.
 
 Engineering Highlight.
@@ -42,20 +42,41 @@ Frontend (Next.js 16)
    UI/UX: Tailwind CSS, Framer Motion, Lucide, react-dropzone
    Media: Custom Image Fallback systemn with blurHash support
 
+CURRENT WORK IN PROGRESS.
+[Phase 1] Core Synchronization (Completed)
+[x] Database Hardening: Migrate nullable metadata to NOT NULL defaults.
+
+[x] Repository Layer: Refactor PostRepository for zero-pointer string scanning.
+
+[x] API Wrapper: Standardize utils.Response for consistent Data/Meta/Error structures.
+
+[Phase 2] Frontend Intelligence (In Progress)
+[x] Zod Integration: Runtime validation for all archival endpoints.
+
+[ ] Auth Persistence: Implement Axios/Fetch interceptors for automated Authorization: Bearer injection.
+
+[ ] Optimistic UI: Transition Like/Comment mutations to TanStack Query for zero-latency feel.
+
+[Phase 3] Advanced Visualization (Upcoming)
+[ ] The Spatial Archive: A 3D "Vault" view using React Three Fiber to navigate artifacts in 3D space.
+
+[ ] Real-time Sync: Implement WebSockets in Go for live comment thread updates.
+
 installation & Setup
 1. Backend
-cp .env.example .env (Set your DB credentials and JWT Secret)
+# Set your DB credentials and JWT Secret
+cp .env.example .env 
 
-Run scripts/seed.sql to generate the archive taxonomy and 50+ test artifacts.
+# Seed the archive taxonomy and test artifacts
+psql -d digital_library -f scripts/seed.sql
 
+# Start the API
 go run cmd/api/main.go
 
 2. Frontend
-cd frontend && npm install
-
+cd frontend
+npm install
 npm run dev
-
-Access at http://localhost:3000
 
 Key Engineering Decisions.
    The Clean Slate Seeding Strategy: Developed a PL/pgSQL loop that utilizes TRUNCATE ... RESTART IDENTITY CASCADE. This allows for a fresh development environment with valid hierarchial data in milleseconds. 
