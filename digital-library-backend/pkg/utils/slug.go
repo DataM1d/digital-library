@@ -3,27 +3,35 @@ package utils
 import (
 	"strings"
 	"unicode"
+
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
-func GenerateSlug(title string) string {
+func GenerateSlug(s string) string {
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	result, _, _ := transform.String(t, s) // Normalize and strip accents.
+
 	var buf strings.Builder
-	buf.Grow(len(title))
+	buf.Grow(len(result))
+
 	lastWasDash := true
 
-	for _, r := range strings.ToLower(title) {
+	for _, r := range result {
 		switch {
 		case unicode.IsLetter(r) || unicode.IsDigit(r):
-			buf.WriteRune(r)
+			buf.WriteRune(unicode.ToLower(r))
 			lastWasDash = false
-		case unicode.IsSpace(r) || r == '-' || r == '_':
+		case r == ' ' || r == '-' || r == '_':
 			if !lastWasDash {
-				buf.WriteRune('-')
+				buf.WriteByte('-')
 				lastWasDash = true
 			}
 		}
 	}
 
-	s := buf.String()
+	res := buf.String()
 
-	return strings.TrimSuffix(s, "-")
+	return strings.TrimRight(res, "-")
 }
