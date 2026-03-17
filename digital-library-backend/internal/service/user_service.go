@@ -4,24 +4,32 @@ import (
 	"errors"
 
 	"github.com/DataM1d/digital-library/internal/models"
-	"github.com/DataM1d/digital-library/internal/repository"
 	"github.com/DataM1d/digital-library/pkg/utils"
 )
+
+type UserRepo interface {
+	Create(u *models.User) error
+	GetByEmail(email string) (*models.User, error)
+}
 
 type UserService interface {
 	Register(username, email, password string) (*models.User, error)
 	Login(email, password string) (string, *models.User, error)
 }
-
 type userService struct {
-	repo *repository.UserRepository
+	repo UserRepo
 }
 
-func NewUserService(repo *repository.UserRepository) UserService {
+func NewUserService(repo UserRepo) UserService {
 	return &userService{repo: repo}
 }
 
 func (s *userService) Register(username, email, password string) (*models.User, error) {
+	existing, _ := s.repo.GetByEmail(email)
+	if existing != nil {
+		return nil, errors.New("user already exists")
+	}
+
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		return nil, err
