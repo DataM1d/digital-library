@@ -1,9 +1,10 @@
 package service
 
 import (
+	"github.com/DataM1d/digital-library/internal/domain"
 	"github.com/DataM1d/digital-library/internal/models"
-	"github.com/DataM1d/digital-library/internal/repository"
 	"github.com/DataM1d/digital-library/pkg/utils"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 type CategoryService interface {
@@ -13,17 +14,20 @@ type CategoryService interface {
 }
 
 type categoryService struct {
-	repo *repository.CategoryRepository
+	repo domain.CategoryRepo
 }
 
-func NewCategoryService(repo *repository.CategoryRepository) CategoryService {
+func NewCategoryService(repo domain.CategoryRepo) CategoryService {
 	return &categoryService{repo: repo}
 }
 
 func (s *categoryService) CreateCategory(name string) (*models.Category, error) {
+	p := bluemonday.StrictPolicy()
+	cleanName := p.Sanitize(name)
+
 	category := &models.Category{
-		Name: name,
-		Slug: utils.GenerateSlug(name),
+		Name: cleanName,
+		Slug: utils.GenerateSlug(cleanName),
 	}
 	err := s.repo.Create(category)
 	return category, err
