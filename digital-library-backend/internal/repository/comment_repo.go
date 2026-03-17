@@ -7,7 +7,7 @@ import (
 )
 
 type CommentRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
 func NewCommentRepository(db *sql.DB) *CommentRepository {

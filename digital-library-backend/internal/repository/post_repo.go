@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/DataM1d/digital-library/internal/domain"
 	"github.com/DataM1d/digital-library/internal/models"
 	"github.com/lib/pq"
 )
@@ -23,7 +24,7 @@ func NewPostRepository(db *sql.DB) *PostRepository {
 	return &PostRepository{db: db}
 }
 
-func (r *PostRepository) WithTransaction(fn func(*PostRepository) error) error {
+func (r *PostRepository) WithTransaction(fn func(domain.PostRepo) error) error {
 	db, ok := r.db.(*sql.DB)
 	if !ok {
 		return fmt.Errorf("repository: transaction already in progress")
