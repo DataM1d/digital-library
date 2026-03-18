@@ -1088,3 +1088,75 @@ Engineering Sprint: Digital Library 2026-03-17
    2. Zero Value: 
       Discovered that Go defaults `time.Time` to `0001-01-01`. Fixed by ensuring SQL `SELECT` statements explicitly include `created_at` and scanning them into the struct.
 
+Engineering Srint: Domain Driven Interfaces & Context Propagation: 2026-03-18
+1. Context Propagation:
+   Problem: 
+   Without `context.Context`, a database query keeps running even if a user cancels the request, wasting server resources.
+
+   Fix:
+   Every method from the Handler -> Service -> Repository now accepts `ctx context.Context`.
+
+   SQL context:
+   Switched from standard `Exec` and `Query` to `ExecContext` adn `QueryContext`. This allows the Postgres druver ti stop long running queries immediately if the connection is severed.
+
+2. Domain Driven Interfaces & Decoupling:
+   Refined the Onion Architecture by centralizing all contracts in `internal/domain/interfaces.go`
+   1. Single Source of Truth: 
+      Instead of repositories defining their own interfaces, they now implement the global `domain` interfaces. This eliminates circular dependencies.
+
+   2. DBTX Interface:
+      Created a shared DBTX interface that encompasses both `*sql.DB` and `*sql.TX`.
+
+   3. Transaction Agnosticism:
+      Repositories no longer care if they are running inside a transaction or a standard connection. They just execute against the `DBTX` provided to them.
+
+3. Atomic Service Logic (WithTransaction):
+   Improved the reliability of complex operations like `"Create Post + Sync Tags."`
+
+   Atomicity: By passing the `ctx` into `WithTransaction`, the entire operation (SQL queries and logic) is bound to the same lifecycle.
+
+   Error Handling: If any part of the tag synchronization fails in `TagRepo`, the service triggers a `Rollback`, ensuring the database never stays in a partial, "dirty" state.
+
+4. Compiler Driven Refactoring:
+   Learned that changing an interface is the fastest way to find "weak links" in a Go project.
+
+   The "Red Sea": 
+   By updating the domain.PostRepo interface first, the compiler immediately pointed out every file that didn't meet the new standard. This "Type Safe" refactoring ensures that no part of the app is left behind during a major architectural shift.
+
+5. Context Aware Architecture:
+   Refactored the entire data pipeline to implement Context Propagation.
+
+   Problem: 
+   Standard database queries (Exec, QueryRow) run to completion even if a user cancels the request, leading to zombie processes.
+
+   Fix:
+   Every layer from Handler -> Service -> Repository now accepts a `ctx` `context.Context`.
+
+   SQL Context:
+   Switched to `ExecContext` and `QueryRowContext`. This allows the Go runtime to signal Postgres to stop work immediately if a timeout occurs or a connection is severed.
+
+
+6. Domain Driven Design (DDD) & Dependency Inversion
+   Cleaned up the "Onion Architecture" by centralizing all contracts in `internal/domain/interfaces.go.`
+
+   The Win: 
+   By moving interfaces to a neutral domain package, I eliminated Circular Dependencies and made the system "Contract First."
+
+   Service Decoupling: 
+   Handlers now depend on domain.PostService rather than concrete implementations, allowing for easier mocking and testing.
+
+7. The DBTX Pattern:
+   Engineered a shared interface for database operations that works for both *sql.DB (connection pool) and *sql.Tx (transactions).
+
+   Versatility:
+   Repositories now use the `DBTX` interface. This means the same repository method can be used for a single query OR as part of a complex multi repo transaction without changing the code.
+
+   Atomic Tags:
+   Refactored `SyncPostTags` to use this pattern, ensuring that Create Post and Sync Tags either both succeed or both fail Rollback.
+
+8. Background Task Lifecycle Management
+   Learned the critical difference between Request Context and Background Context.
+
+   Request Context: Dies as soon as the HTTP response is sent.
+
+   Background Context: Used `context.Background()` with a manual `context.WithTimeout` for the `BlurHash` generation goroutine. This ensures the image processing finishes even after the user receives their "201 Created" status.
