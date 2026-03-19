@@ -1,37 +1,42 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/DataM1d/digital-library/internal/models"
 )
 
 type MockCategoryRepo struct {
-	OnCreate func(c *models.Category) error
-	OnGetAll func() ([]models.Category, error)
-	OnDelete func(id int) error
+	OnCreate func(ctx context.Context, c *models.Category) error
+	OnGetAll func(ctx context.Context) ([]models.Category, error)
+	OnDelete func(ctx context.Context, id int) error
 }
 
-func (m *MockCategoryRepo) Create(c *models.Category) error    { return m.OnCreate(c) }
-func (m *MockCategoryRepo) GetAll() ([]models.Category, error) { return m.OnGetAll() }
-func (m *MockCategoryRepo) Delete(id int) error                { return m.OnDelete(id) }
+func (m *MockCategoryRepo) Create(ctx context.Context, c *models.Category) error {
+	return m.OnCreate(ctx, c)
+}
+func (m *MockCategoryRepo) GetAll(ctx context.Context) ([]models.Category, error) {
+	return m.OnGetAll(ctx)
+}
+func (m *MockCategoryRepo) Delete(ctx context.Context, id int) error { return m.OnDelete(ctx, id) }
 
 func TestCategoryService_CreateCategory(t *testing.T) {
+	ctx := context.Background()
 	t.Run("Sanitization and slug generation", func(t *testing.T) {
 		var capturedCategory *models.Category
 
 		mockRepo := &MockCategoryRepo{
-			OnCreate: func(c *models.Category) error {
+			OnCreate: func(ctx context.Context, c *models.Category) error {
 				capturedCategory = c
 				return nil
 			},
 		}
 
 		service := NewCategoryService(mockRepo)
-
 		inputName := "<script>alert('xss')</script>Historical Documents"
 
-		category, err := service.CreateCategory(inputName)
+		category, err := service.CreateCategory(ctx, inputName, "admin")
 
 		if err != nil {
 			t.Fatalf("Expected nil error, got %v", err)
@@ -49,6 +54,17 @@ func TestCategoryService_CreateCategory(t *testing.T) {
 
 		if capturedCategory.Name != expectedName {
 			t.Errorf("Repository received unsanitized name")
+		}
+	})
+
+	t.Run("Unauthorized creation attempt", func(t *testing.T) {
+		mockRepo := &MockCategoryRepo{}
+		service := NewCategoryService(mockRepo)
+
+		_, err := service.CreateCategory(ctx, "New Category", "user")
+
+		if err == nil {
+			t.Error("Expected error for non-admin user, got nil")
 		}
 	})
 }

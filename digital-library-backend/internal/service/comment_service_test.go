@@ -1,61 +1,65 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/DataM1d/digital-library/internal/models"
 )
 
 type MockCommentRepo struct {
-	OnCreate      func(c *models.Comment) error
-	OnGetByPostID func(postID int) ([]models.Comment, error)
+	OnCreate      func(ctx context.Context, c *models.Comment) error
+	OnGetByPostID func(ctx context.Context, postID int) ([]models.Comment, error)
 }
 
-func (m *MockCommentRepo) Create(c *models.Comment) error {
-	return m.OnCreate(c)
+func (m *MockCommentRepo) Create(ctx context.Context, c *models.Comment) error {
+	return m.OnCreate(ctx, c)
 }
 
-func (m *MockCommentRepo) GetByPostID(postID int) ([]models.Comment, error) {
-	return m.OnGetByPostID(postID)
+func (m *MockCommentRepo) GetByPostID(ctx context.Context, postID int) ([]models.Comment, error) {
+	return m.OnGetByPostID(ctx, postID)
 }
 
-func TestCommentService_CreateComment(t *testing.T) {
+func TestCommentService_AddComment(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("Sanitization logic", func(t *testing.T) {
 		var capturedComment *models.Comment
 		mockRepo := &MockCommentRepo{
-			OnCreate: func(c *models.Comment) error {
+			OnCreate: func(ctx context.Context, c *models.Comment) error {
 				capturedComment = c
 				return nil
 			},
 		}
+		service := NewCommentService(mockRepo, nil)
 
-		mockPostRepo := &MockPostRepo{
-			OnGetBySlug: func(slug string, id int) (*models.Post, error) {
-				return &models.Post{ID: 100}, nil
-			},
-		}
+		content := "<script>alert('xss')</script>Safe text"
+		postID := 100
+		userID := 1
 
-		service := NewCommentService(mockRepo, mockPostRepo)
-		comment := &models.Comment{
-			Content: "<script>alert('xss')</script>Safe text",
-		}
-
-		err := service.CreateComment("test-post", comment)
+		comment, err := service.AddComment(ctx, postID, userID, content, nil)
 
 		if err != nil {
 			t.Fatalf("Expected nil error, got %v", err)
 		}
 
-		if capturedComment.Content != "Safe text" {
-			t.Errorf("Expected sanitized content 'Safe text', got %s", capturedComment.Content)
+		if comment.Content != "Safe text" {
+			t.Errorf("Expected sanitized content 'Safe text', got %s", comment.Content)
+		}
+
+		if capturedComment.PostID != postID {
+			t.Errorf("Expected PostID %d, got %d", postID, capturedComment.PostID)
 		}
 	})
 }
 
 func TestCommentService_BuildCommentTree(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("Correctly nests children under parents", func(t *testing.T) {
 		parentID := 1
 		childID := 2
+		postID := 100
 
 		flatComments := []models.Comment{
 			{ID: parentID, Content: "Parent", ParentID: nil},
@@ -63,19 +67,13 @@ func TestCommentService_BuildCommentTree(t *testing.T) {
 		}
 
 		mockRepo := &MockCommentRepo{
-			OnGetByPostID: func(id int) ([]models.Comment, error) {
+			OnGetByPostID: func(ctx context.Context, id int) ([]models.Comment, error) {
 				return flatComments, nil
 			},
 		}
 
-		mockPostRepo := &MockPostRepo{
-			OnGetBySlug: func(slug string, id int) (*models.Post, error) {
-				return &models.Post{ID: 100}, nil
-			},
-		}
-
-		service := NewCommentService(mockRepo, mockPostRepo)
-		tree, err := service.GetCommentsByPostSlug("test-post")
+		service := NewCommentService(mockRepo, nil)
+		tree, err := service.GetCommentsByPost(ctx, postID)
 
 		if err != nil {
 			t.Fatalf("Failed to get comments: %v", err)

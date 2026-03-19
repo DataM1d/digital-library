@@ -1,27 +1,28 @@
 package service
 
 import (
+	"context"
+	"errors"
+
 	"github.com/DataM1d/digital-library/internal/domain"
 	"github.com/DataM1d/digital-library/internal/models"
 	"github.com/DataM1d/digital-library/pkg/utils"
 	"github.com/microcosm-cc/bluemonday"
 )
 
-type CategoryService interface {
-	CreateCategory(name string) (*models.Category, error)
-	GetAllCategories() ([]models.Category, error)
-	DeleteCategory(id int) error
-}
-
 type categoryService struct {
 	repo domain.CategoryRepo
 }
 
-func NewCategoryService(repo domain.CategoryRepo) CategoryService {
+func NewCategoryService(repo domain.CategoryRepo) domain.CategoryService {
 	return &categoryService{repo: repo}
 }
 
-func (s *categoryService) CreateCategory(name string) (*models.Category, error) {
+func (s *categoryService) CreateCategory(ctx context.Context, name, role string) (*models.Category, error) {
+	if role != "admin" {
+		return nil, errors.New("unauthorized: administrative privileges required")
+	}
+
 	p := bluemonday.StrictPolicy()
 	cleanName := p.Sanitize(name)
 
@@ -29,14 +30,22 @@ func (s *categoryService) CreateCategory(name string) (*models.Category, error) 
 		Name: cleanName,
 		Slug: utils.GenerateSlug(cleanName),
 	}
-	err := s.repo.Create(category)
-	return category, err
+
+	if err := s.repo.Create(ctx, category); err != nil {
+		return nil, err
+	}
+
+	return category, nil
 }
 
-func (s *categoryService) GetAllCategories() ([]models.Category, error) {
-	return s.repo.GetAll()
+func (s *categoryService) GetCategories(ctx context.Context) ([]models.Category, error) {
+	return s.repo.GetAll(ctx)
 }
 
-func (s *categoryService) DeleteCategory(id int) error {
-	return s.repo.Delete(id)
+func (s *categoryService) DeleteCategory(ctx context.Context, id int, role string) error {
+	if role != "admin" {
+		return errors.New("unauthorized: administrative privileges required")
+	}
+
+	return s.repo.Delete(ctx, id)
 }
