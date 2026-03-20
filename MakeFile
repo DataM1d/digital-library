@@ -1,0 +1,21 @@
+.PHONY: test test-v run build tidy
+
+# Run all tests silently
+test: 
+	go test ./...
+
+# Run all tests with verbose output (the one we just did)
+test-v:
+	go test ./internal/repository/... ./internal/service/... ./internal/handlers/... -v
+
+# Tidy up dependencies
+tidy:
+	go mod tidy
+
+# Run the API server
+run:
+	go run cmd/api/main.go
+
+# Build the binary
+build:
+	go build -o bin/api cmd/api/main.go
