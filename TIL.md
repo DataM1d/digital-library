@@ -1180,3 +1180,37 @@ Engineering Sprint: Domain Driven Refactor 2026-03-19
    The `CommentService` no longer needs to call `PostRepo` to find a post by slug. It recieves the postID directly. This simplified the service logic and made unit test 2x faster byu reducing the need for complex mocks.
 
 
+Engineering Sprint: Test Driven Refactor 2026-03-20
+1. HTTP Handler Testing with `httptest`:
+   Learned: How to isolate the Transport Layer (Gin) from the Service layer using Mocks.
+
+   Multipart/Form Data Mocking:
+   Developed a strategy to simulate file uploads in tests using `multipart.Writer` and manual binary headers to satisfy `http.DetectContentType`.
+
+   Win: 
+   Verified that `AuthMiddleware` values are correctly extracted and passed to the business logic, ensuring the face of the API is secure.
+
+2. Strict Type Safety in Pagination:
+   Challenge:
+   Encountered the `invalid operation: total + limit (mismatched types int and int64)` compiler error.
+
+   Solution:
+   Standardized on `int` for the `PaginationMeta` domain model. Implemented explicit type casting `(int(total))` in the Service layer to bridge the gap between Postgres's `int64` counts and the API's `int` requirements.
+
+   Algorithm:
+   Refined the Ceiling Division formula for `TotalPages: (total + limit -1) / limit`
+
+3. Interface Satisfaction & Mocking
+   Architecture: Finalized the Domain Driven Interface pattern.
+
+   Lesson: 
+   Learned that Go is non negotiable regarding method signatures. Even a missing pointer (*) or a renamed struct in a return type will break the interface satisfaction.
+
+   Impact: 
+   Every service and handler is now 100% decoupled, allowing for "Plug and Play" logic swapping.
+
+4. Background Lifecycle Management:
+   Pattern: Implemented a Fire and Forget goroutine for BlurHash generation.
+
+   Safety:
+   Discovered that background tasks must use a fresh `context.Background()` with a timeout, rather than the` c.Request.Context()`, because the request context is canceled the moment the HTTP response is sent to the user.

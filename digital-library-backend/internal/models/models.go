@@ -7,8 +7,10 @@ type Like struct {
 }
 
 type PaginationMeta struct {
-	CurrentPage int   `json:"current_page"`
-	TotalItems  int64 `json:"total_items"`
-	TotalPages  int   `json:"total_pages"`
-	Limit       int   `json:"limit"`
+	TotalItems  int  `json:"total_items"`
+	TotalPages  int  `json:"total_pages"`
+	CurrentPage int  `json:"current_page"`
+	Limit       int  `json:"limit"`
+	HasNextPage bool `json:"has_next_page"`
+	HasPrevPage bool `json:"has_prev_page"`
 }

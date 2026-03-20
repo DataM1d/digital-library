@@ -116,11 +116,15 @@ func (s *postService) GetAllPosts(ctx context.Context, category, search string, 
 		return nil, nil, err
 	}
 
+	totalPages := (total + limit - 1) / limit
+
 	meta := &models.PaginationMeta{
 		CurrentPage: page,
-		TotalItems:  int64(total),
-		TotalPages:  (total + limit - 1) / limit,
+		TotalItems:  int(total),
+		TotalPages:  int(totalPages),
 		Limit:       limit,
+		HasNextPage: page < int(totalPages),
+		HasPrevPage: page > 1,
 	}
 
 	return posts, meta, nil
