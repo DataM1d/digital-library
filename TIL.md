@@ -1214,3 +1214,27 @@ Engineering Sprint: Test Driven Refactor 2026-03-20
 
    Safety:
    Discovered that background tasks must use a fresh `context.Background()` with a timeout, rather than the` c.Request.Context()`, because the request context is canceled the moment the HTTP response is sent to the user.
+
+5. SQL Mocking with go sqlmock:
+   Concept: 
+   Learned how to test the database layer without a live database by intercepting SQL queries and simulating result rows.
+
+   The Trap: 
+   Regex matching in `sqlmock`. If the SQL string in the code doesn't match the mock exactly (including parentheses and positional arguments like `$1`), the test fails.
+
+   Solution:
+   Used Backticks in Go for raw string literals to avoid "unknown escape sequence" errors when using backslashes for regex escaping `(\$1, \())`.
+
+2. Repository Design Patterns:
+   Sync Logic:
+   Implemented a `SyncPostTags` method that uses a Delete then insert pattern. Learned to mock this in a loop to ensure every tag is processed.
+
+   Scan Precision:
+   Verified that `rosw.Scan` must exactly match the SELECT column order. Testing this caught potential runtime panics early.
+
+3. Task Automation with `Makefile`:
+   Why:
+   Typing `go test ./internal/repository/... ./internal/service/...` is prone to human error.
+
+   Win:
+   Created a centralized `Makefile` to turn 80 character commands into 10 character aliases `(make test-v)`. This ensures the "Green Screen" of passing tests is only one command away.
