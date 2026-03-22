@@ -50,6 +50,15 @@ func (s *postService) CreateLibraryEntry(ctx context.Context, post *models.Post,
 	}
 	post.Slug = finalSlug
 
+	if post.ImageURL != "" && !strings.HasPrefix(post.ImageURL, "http") {
+		hash, err := utils.GenerateBlurHash(post.ImageURL, 4, 3)
+		if err != nil {
+			log.Printf("Non-fatal: BlurHash generation failed: %v", err)
+		} else {
+			post.BlurHash = hash
+		}
+	}
+
 	return s.repo.WithTransaction(ctx, func(txRepo domain.PostRepo) error {
 		if err := txRepo.Create(ctx, post); err != nil {
 			return err
@@ -67,6 +76,16 @@ func (s *postService) CreateLibraryEntry(ctx context.Context, post *models.Post,
 func (s *postService) UpdatePost(ctx context.Context, post *models.Post, tagNames []string, userRole string, userID int) error {
 	if userRole != "admin" {
 		return errors.New("unauthorized: system update restricted")
+	}
+
+	existing, err := s.repo.GetByID(ctx, post.ID)
+	if err == nil {
+		if existing.ImageURL != post.ImageURL && post.ImageURL != "" && !strings.HasPrefix(post.ImageURL, "http") {
+			hash, _ := utils.GenerateBlurHash(post.ImageURL, 4, 3)
+			post.BlurHash = hash
+		} else {
+			post.BlurHash = existing.BlurHash
+		}
 	}
 
 	strict := bluemonday.StrictPolicy()
