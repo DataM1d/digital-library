@@ -13,14 +13,15 @@ import (
 )
 
 type MockPostService struct {
-	OnCreate     func(ctx context.Context, p *models.Post, tags []string, role string, userID int) error
-	OnGetBySlug  func(ctx context.Context, slug string, userID int) (*models.Post, error)
-	OnGetAll     func(ctx context.Context, cat, search string, tags []string, page, limit int, role string, userID int) ([]models.Post, *models.PaginationMeta, error)
-	OnUpdate     func(ctx context.Context, p *models.Post, tags []string, role string, userID int) error
-	OnDelete     func(ctx context.Context, id int, role string) error
-	OnToggleLike func(ctx context.Context, uID, pID int) (bool, error)
-	OnGetLiked   func(ctx context.Context, uID int) ([]models.Post, error)
-	OnUpdateHash func(ctx context.Context, id int, hash string) error
+	OnCreate               func(ctx context.Context, p *models.Post, tags []string, role string, userID int) error
+	OnGetBySlug            func(ctx context.Context, slug string, userID int) (*models.Post, error)
+	OnGetAll               func(ctx context.Context, cat, search string, tags []string, page, limit int, role string, userID int) ([]models.Post, *models.PaginationMeta, error)
+	OnUpdate               func(ctx context.Context, p *models.Post, tags []string, role string, userID int) error
+	OnDelete               func(ctx context.Context, id int, role string) error
+	OnToggleLike           func(ctx context.Context, uID, pID int) (bool, error)
+	OnGetLiked             func(ctx context.Context, uID int) ([]models.Post, error)
+	OnUpdateHash           func(ctx context.Context, id int, hash string) error
+	OnCleanupOrphanedFiles func(ctx context.Context) (int, error)
 }
 
 func (m *MockPostService) CreateLibraryEntry(ctx context.Context, p *models.Post, t []string, r string, uID int) error {
@@ -46,6 +47,9 @@ func (m *MockPostService) GetLikedPosts(ctx context.Context, uID int) ([]models.
 }
 func (m *MockPostService) UpdateBlurHash(ctx context.Context, id int, h string) error {
 	return m.OnUpdateHash(ctx, id, h)
+}
+func (m *MockPostService) CleanupOrphanedFiles(ctx context.Context) (int, error) {
+	return m.OnCleanupOrphanedFiles(ctx)
 }
 
 func TestPostHandler_CreatePost(t *testing.T) {
@@ -76,6 +80,9 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		mockService := &MockPostService{
 			OnCreate: func(ctx context.Context, p *models.Post, tags []string, role string, uID int) error {
 				p.ID = 1
+				return nil
+			},
+			OnUpdateHash: func(ctx context.Context, id int, hash string) error {
 				return nil
 			},
 		}

@@ -37,8 +37,8 @@ func (h *PostHandler) saveUploadedFile(c *gin.Context) (string, string, error) {
 	defer file.Close()
 
 	buff := make([]byte, 512)
-	file.Read(buff)
-	file.Seek(0, 0)
+	_, _ = file.Read(buff)
+	_, _ = file.Seek(0, 0)
 	contentType := http.DetectContentType(buff)
 	allowedTypes := map[string]bool{"image/jpeg": true, "image/png": true, "image/webp": true}
 
@@ -100,7 +100,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	if err = h.postService.CreateLibraryEntry(ctx, &post, tagNames, role, userID); err != nil {
-		os.Remove(localPath)
+		_ = os.Remove(localPath)
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
@@ -133,14 +133,20 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		AltText:        c.PostForm("alt_text"),
 		LastModifiedBy: userID,
 		ImageURL:       existingPost.ImageURL,
+		BlurHash:       existingPost.BlurHash,
 	}
 
-	url, localPath, err := h.saveUploadedFile(c)
-	if err == nil {
-		post.ImageURL = url
-		go h.generateBlurHashInBackground(localPath, post.ID)
-		oldFilePath := filepath.Join(".", existingPost.ImageURL)
-		os.Remove(oldFilePath)
+	if _, _, err := c.Request.FormFile("image"); err == nil {
+		url, localPath, saveErr := h.saveUploadedFile(c)
+		if saveErr == nil {
+			post.ImageURL = url
+			go h.generateBlurHashInBackground(localPath, post.ID)
+
+			if existingPost.ImageURL != "" {
+				oldFilePath := filepath.Join(".", existingPost.ImageURL)
+				_ = os.Remove(oldFilePath)
+			}
+		}
 	}
 
 	if err := h.postService.UpdatePost(ctx, &post, tagNames, role, userID); err != nil {
@@ -192,6 +198,7 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 	param := c.Param("id")
 	userID := c.GetInt("user_id")
 
+	var existingPost *models.Post
 	id, err := strconv.Atoi(param)
 	if err != nil {
 		post, err := h.postService.GetPostBySlug(ctx, param, userID)
@@ -200,6 +207,16 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 			return
 		}
 		id = post.ID
+		existingPost = post
+	} else {
+		post, err := h.postService.GetPostBySlug(ctx, param, userID)
+		if err == nil {
+			existingPost = post
+		}
+	}
+
+	if existingPost != nil && existingPost.ImageURL != "" {
+		_ = os.Remove(filepath.Join(".", existingPost.ImageURL))
 	}
 
 	if err := h.postService.DeletePost(ctx, id, role); err != nil {
@@ -241,7 +258,7 @@ func (h *PostHandler) GetMyLikedPosts(c *gin.Context) {
 }
 
 func (h *PostHandler) generateBlurHashInBackground(filePath string, postID int) {
-	bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // Background tasks get a fresh context because the request context dies when the response is sent
+	bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	file, err := os.Open(filePath)
