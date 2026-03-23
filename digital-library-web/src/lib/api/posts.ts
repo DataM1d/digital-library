@@ -29,8 +29,12 @@ export async function getCategories() {
   });
   
   if (!res.ok) throw new Error("Failed to fetch categories");
-  const data = await res.json();
-  return z.array(CategorySchema).parse(data.data);
+  
+  const json = await res.json();
+  
+  const categoryData = json.data && Array.isArray(json.data) ? json.data : json;
+
+  return z.array(CategorySchema).parse(categoryData);
 }
 
 export const postsApi = {
