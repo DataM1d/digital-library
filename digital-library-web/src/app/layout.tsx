@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AuthProvider } from "@/context/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "sonner";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import Providers from "@/components/providers/Providers"; 
 
 import "./globals.css";
 
@@ -22,15 +21,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <Toaster position="bottom-right" richColors />
-            <Navbar />
-            <div className="relative flex min-h-screen flex-col">
-              {children}
-            </div>
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          <Toaster position="bottom-right" richColors />
+          <Navbar />
+          <main className="relative flex min-h-screen flex-col">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );
