@@ -9,20 +9,38 @@ import (
 )
 
 type MockPostRepo struct {
-	OnSlugExists func(ctx context.Context, slug string) (bool, error)
-	OnCreate     func(ctx context.Context, p *models.Post) error
-	OnWithTx     func(ctx context.Context, fn func(domain.PostRepo) error) error
+	OnSlugExists      func(ctx context.Context, slug string) (bool, error)
+	OnCreate          func(ctx context.Context, p *models.Post) error
+	OnWithTx          func(ctx context.Context, fn func(domain.PostRepo) error) error
+	OnGetAllImageURLs func(ctx context.Context) ([]string, error)
 }
 
 func (m *MockPostRepo) SlugExists(ctx context.Context, s string) (bool, error) {
-	return m.OnSlugExists(ctx, s)
+	if m.OnSlugExists != nil {
+		return m.OnSlugExists(ctx, s)
+	}
+	return false, nil
 }
-func (m *MockPostRepo) Create(ctx context.Context, p *models.Post) error { return m.OnCreate(ctx, p) }
+
+func (m *MockPostRepo) Create(ctx context.Context, p *models.Post) error {
+	if m.OnCreate != nil {
+		return m.OnCreate(ctx, p)
+	}
+	return nil
+}
+
 func (m *MockPostRepo) WithTransaction(ctx context.Context, fn func(domain.PostRepo) error) error {
 	if m.OnWithTx != nil {
 		return m.OnWithTx(ctx, fn)
 	}
 	return fn(m)
+}
+
+func (m *MockPostRepo) GetAllImageURLs(ctx context.Context) ([]string, error) {
+	if m.OnGetAllImageURLs != nil {
+		return m.OnGetAllImageURLs(ctx)
+	}
+	return []string{}, nil
 }
 
 func (m *MockPostRepo) Update(ctx context.Context, p *models.Post) error          { return nil }

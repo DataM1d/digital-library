@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/DataM1d/digital-library/internal/domain"
 	"github.com/DataM1d/digital-library/internal/models"
@@ -50,15 +48,6 @@ func (s *postService) CreateLibraryEntry(ctx context.Context, post *models.Post,
 	}
 	post.Slug = finalSlug
 
-	if post.ImageURL != "" && !strings.HasPrefix(post.ImageURL, "http") {
-		hash, err := utils.GenerateBlurHash(post.ImageURL, 4, 3)
-		if err != nil {
-			log.Printf("Non-fatal: BlurHash generation failed: %v", err)
-		} else {
-			post.BlurHash = hash
-		}
-	}
-
 	return s.repo.WithTransaction(ctx, func(txRepo domain.PostRepo) error {
 		if err := txRepo.Create(ctx, post); err != nil {
 			return err
@@ -76,16 +65,6 @@ func (s *postService) CreateLibraryEntry(ctx context.Context, post *models.Post,
 func (s *postService) UpdatePost(ctx context.Context, post *models.Post, tagNames []string, userRole string, userID int) error {
 	if userRole != "admin" {
 		return errors.New("unauthorized: system update restricted")
-	}
-
-	existing, err := s.repo.GetByID(ctx, post.ID)
-	if err == nil {
-		if existing.ImageURL != post.ImageURL && post.ImageURL != "" && !strings.HasPrefix(post.ImageURL, "http") {
-			hash, _ := utils.GenerateBlurHash(post.ImageURL, 4, 3)
-			post.BlurHash = hash
-		} else {
-			post.BlurHash = existing.BlurHash
-		}
 	}
 
 	strict := bluemonday.StrictPolicy()
@@ -153,25 +132,7 @@ func (s *postService) DeletePost(ctx context.Context, id int, userRole string) e
 	if userRole != "admin" {
 		return errors.New("unauthorized: purge restricted")
 	}
-
-	post, err := s.repo.GetByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if err := s.repo.Delete(ctx, id); err != nil {
-		return err
-	}
-
-	if post.ImageURL != "" && !strings.HasPrefix(post.ImageURL, "http") {
-		trimmedPath := strings.TrimPrefix(post.ImageURL, "/")
-		localPath := filepath.Join(".", trimmedPath)
-		if err := os.Remove(localPath); err != nil {
-			log.Printf("Non-fatal: Cleanup failed for %s: %v", localPath, err)
-		}
-	}
-
-	return nil
+	return s.repo.Delete(ctx, id)
 }
 
 func (s *postService) UpdateBlurHash(ctx context.Context, postID int, hash string) error {
@@ -199,4 +160,40 @@ func (s *postService) ToggleLike(ctx context.Context, userID, postID int) (bool,
 
 func (s *postService) GetLikedPosts(ctx context.Context, userID int) ([]models.Post, error) {
 	return s.repo.GetUserLikedPosts(ctx, userID)
+}
+
+func (s *postService) CleanupOrphanedFiles(ctx context.Context) (int, error) {
+	activeFiles, err := s.repo.GetAllImageURLs(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	activeMap := make(map[string]bool)
+	for _, url := range activeFiles {
+		if url != "" {
+			activeMap[filepath.Base(url)] = true
+		}
+	}
+
+	uploadDir := "./uploads"
+	files, err := os.ReadDir(uploadDir)
+	if err != nil {
+		return 0, err
+	}
+
+	removedCount := 0
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		if !activeMap[file.Name()] {
+			err := os.Remove(filepath.Join(uploadDir, file.Name()))
+			if err == nil {
+				removedCount++
+			}
+		}
+	}
+
+	return removedCount, nil
 }
