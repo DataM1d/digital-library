@@ -48,7 +48,7 @@ export function PostEditor({ post, isEditing = true }: PostEditorProps) {
 
         <section className="space-y-2">
           <label className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Taxonomy</label>
-          <TagInput tags={tags} setTags={setTags} />
+          <TagInput tags={tags} onChange={setTags} />
         </section>
 
         <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
