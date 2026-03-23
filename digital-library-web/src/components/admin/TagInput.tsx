@@ -5,32 +5,31 @@ import { X, Hash } from "lucide-react";
 
 interface TagInputProps {
   tags: string[];
-  setTags: (tags: string[]) => void;
+  onChange: (tags: string[]) => void;
 }
 
-export function TagInput({ tags, setTags }: TagInputProps) {
-  const [input, setInput] = useState("");
+export function TagInput({ tags, onChange }: TagInputProps) {
+  const [inputValue, setInputValue] = useState("");
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && input.trim()) {
+    if (e.key === "Enter" && inputValue.trim()) {
       e.preventDefault();
-      const newTag = input.trim().toLowerCase(); // Normalize to lowercase for consistency
+      const newTag = inputValue.trim().toLowerCase();
       if (!tags.includes(newTag)) {
-        setTags([...tags, newTag]);
+        onChange([...tags, newTag]);
       }
-      setInput("");
-    } else if (e.key === "Backspace" && !input && tags.length > 0) {
-      // Remove last tag on backspace if input is empty
+      setInputValue("");
+    } else if (e.key === "Backspace" && !inputValue && tags.length > 0) {
       removeTag(tags.length - 1);
     }
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
+    setInputValue(e.target.value);
   };
 
   const removeTag = (indexToRemove: number) => {
-    setTags(tags.filter((_, index) => index !== indexToRemove));
+    onChange(tags.filter((_, index) => index !== indexToRemove));
   };
 
   return (
@@ -57,7 +56,7 @@ export function TagInput({ tags, setTags }: TagInputProps) {
         
         <input 
           type="text"
-          value={input}
+          value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder={tags.length === 0 ? "Add classifications..." : ""}
