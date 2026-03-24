@@ -41,7 +41,6 @@ Phase 1: The Foundation 2026-02-19
 
     Note: Use Struct Tags (e.g `json:'title'`) to fix Go's naming convetions (PascalCase) and JSON's convetions (camelCase/snake_case).
 
-
 5. Database Connectivity in Go
     sql.Open vs Ping(): Open initializes the driver/pool, while Ping verifies the actual connection.
 
@@ -135,7 +134,7 @@ Phase 2: Security & Identity 2026-02-22
     Role based foundation: Added a role column (defaulting to 'user') to prepare for the Admin only features. 
 
 3. Model mapping & JSON secuity
-    The hyphen tag(json:"-"): Discovered the power of the hyphen tag in Go. By marking the PasswordHash field with json:"-", i have ensured that the hash stays on the server and is never leaked to the frontend, even if the whole User object os encoded to JSON/
+    The hyphen tag(json:"-"): Discovered the power of the hyphen tag in Go. By marking the PasswordHash field with json:"-", i have ensured that the hash stays on the server and is never leaked to the frontend, even if the whole User object is encoded to JSON.
 
     Clean separation: Created a dedicated User struct in /internal/models to match the new database schema.
 
@@ -147,7 +146,8 @@ Phase 2: Security & Identity 2026-02-22
 5. User related database operations
     internal/repository/user_repo.go: Handlers should not know how to write SQL. By moving the INSERT and SELECT queries into a Repository, the code stays modular.
 
-    Scan & return: I learned how to use RET
+    Scan & return:
+    I learned how to use RET
     URNING id, created_at in Postgres. This allows Go to immediately populate the User struct with the database generated ID and timestamp without making a second query.
     
     Lesson: Using QueryRow is more efficient than Query when you only expect one result (like a single user or a new ID). It handles the row closing for you, which reduces the chance of memory leaks.
@@ -220,21 +220,21 @@ Phase 3: The Library Logic 2026-02-23
 7. Dependency Injection Refactoring
     The Wiring: I had to update main.go to follow a new order: DB -> Repository -> Service -> Handler.
 
-    esson: If I change the  Constructor of a handler (e.g., making NewPostHandler take a Service instead of a Repo), I must update the wiring in main.go. This is called dependency injection. Passing the tools a function needs to do its job.
+    Lesson: If I change the  Constructor of a handler (e.g., making NewPostHandler take a Service instead of a Repo), I must update the wiring in main.go. This is called dependency injection. Passing the tools a function needs to do its job.
 
 8. Centralized Security (The .env Win)
     What: Moved the JWT_SECRET out of the code and into the .env file.
 
     Why: Previously, i had the secret key typed in two different files. if i changed one and forgot the other the gatekeeper would break.
 
-    The fix: Both the GenerateToken utility adn the AuthMiddleware now use os.Getenv("JWT_SECRET").
+    The fix: Both the GenerateToken utility and the AuthMiddleware now use os.Getenv("JWT_SECRET").
 
     Lesson: Never hardcode secrets. Centralizing them in .env makes the app more secure and prevents key mismatch bugs that are a nightmare to debug.
 
 9. Relational Mastery 2026-02-23
     The type safety trap: Discovered that Go context keys are type specific contextKey("role") is invisible if yoiu search for the string "role".
 
-    Scheam synchronization: Fixed SQLSTATE 42703 by ensuring the PostgresSQL table columns matched the Go struct fields exactly.
+    Schema synchronization: Fixed SQLSTATE 42703 by ensuring the PostgresSQL table columns matched the Go struct fields exactly.
 
     Statelles reality: Mastered the JWT lifecycle roles must be updated in the DB before logging in to get a valid admin token.
 
@@ -246,7 +246,7 @@ Phase 4: Interaction & Polish 2026-02-23
 
     The 1=1 trick: Used Where 1=1 as a base for SQL queries. This allowed me to dinamically append AND clauses for categories or search terns without worrying if it was the first filter or the second.
 
-    Pattern matching: Learned that ILIKe is the superpower of Postgres it performs case insensitive searches so that "PHASE" and "phase" return the sam results.
+    Pattern matching: Learned that ILIKe is the superpower of Postgres it performs case insensitive searches so that "PHASE" and "phase" return the same results.
 
     Lesson: Percent signs are wildcards. Searching for %logc% finds "logic", "logical", and "biologic".
 
@@ -256,7 +256,6 @@ Phase 4: Interaction & Polish 2026-02-23
     The unique constraint: Applied UNIQUE(user_id, post_id) at the database level.
 
     Why: This is defensive programming. Even if my Go code has a bug and tries to save a duplicate like, the Database acts as the fonal shield and rejects the double entry.
-
 
     Toggle pattern: insted of a simple Add button, i built a ToggleLike function. It checks if a record exists, if it does, it deletes it (unlike), if it does not it creates it (like).
 
@@ -313,7 +312,7 @@ Phase 2: Public Discovery V2 Core 2026-02-25
 
     Solution: Used `sql.Nullstring` during `rows.Scan`.
 
-    Lesson: Scanning a NULL database value into a standard Go string will cause  a runtime error. `NullString` provides a `.String` field and `.Valid` boolean to handle this safety.
+    Lesson: Scanning a NULL database value into a standard Go string will cause a runtime error. `NullString` provides a `.String` field and `.Valid` boolean to handle this safety.
 
 Phase 3: The Social Layer 2026-02-25
 
@@ -358,7 +357,7 @@ Phase 3: The Slug & Collision Engine 2026-02-25
 1. String Proccesing with Regex:
     What: Built a utility to convert titles like "Modern Art!" into "modern-art".
 
-    The Regex Trap: Learned that `[^a-z0-9]+` removes spaces, making `[^a-z0-9]+` removes spaces, act on empty characters between letters.
+    The Regex Trap: Learned that `[^a-z0-9]+` removes spaces on empty characters between letters.
 
     Fix: Used `[^a-z0-9\s]+` to preserve spaces temporarily, then swapped spaces for hyphens. This taught me that Regex is powerful but requires precise "character white-listing."
 
@@ -375,7 +374,6 @@ Phase 3: The Slug & Collision Engine 2026-02-25
     Lesson: Learned that IDs are for computers, but Slugs are for humans and Search Engines. Using strings as primary identifiers in URLs makes the platform feel like a real product.
 
 Phase 4: Binary Data & Physical Storage 2026-02-26
-
 1.  Multipart Form Handling:
     What: Used `r.ParseMultipartForm(5 << 20)` to handle image uploads.
 
@@ -398,9 +396,7 @@ Phase 4: Binary Data & Physical Storage 2026-02-26
 
     Why: This makes the API more resillient. If the post creation fails, you still have the image. If the image upload fails, you do not waste DB resources.
 
-
-Phase 4:a Optimization, Refinement version 2: Binary Data, Physical Storage & The Lifecycle Final 2026-02-27
-
+version 2: Binary Data, Physical Storage & The Lifecycle Final 2026-02-27
 1. Service vs Repo:
     What: Implemented DeletePost logic that removes both the DB row and the physical file.
 
@@ -1312,4 +1308,3 @@ FRONTEND TanStack Query (v5) Next.js Async Integration: 2026-03-23
    Techincal Win:
    This hirearchy ensures that the Auth state can leverage the Query cache, and the entire app stays hydrated with the correct CSS variables and API state simultaneously.
 
-   
