@@ -1,75 +1,68 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Post } from "@/types";
-import { toast } from "sonner";
 
-export function usePostEditor(post: Post, isEditing: boolean) {
+export function usePostEditor(initialPost: Post, isEditing: boolean) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
-
-  const [tags, setTags] = useState<string[]>(post.tags || []);
+  const [tags, setTags] = useState<string[]>(initialPost.tags || []);
+  
   const [formData, setFormData] = useState({
-    title: post?.title || "",
-    content: post?.content || "",
-    category_id: post?.category_id?.toString() || "1",
-    alt_text: post.alt_text || "",
-    status: (post?.status as "published" | "draft") || "published",
+    title: initialPost.title || "",
+    content: initialPost.content || "",
+    category_id: initialPost.category_id?.toString() || "",
+    status: initialPost.status || "published",
+    alt_text: initialPost.alt_text || "",
   });
-
-  useEffect(() => {
-    if (isEditing && post && post.id !== 0) {
-      setFormData({
-        title: post.title,
-        content: post.content,
-        category_id: post.category_id.toString(),
-        alt_text: post.alt_text || "",
-        status: post.status as "published" | "draft"
-      });
-      setTags(post.tags || []);
-    }
-  }, [post, isEditing])
 
   const savePost = async () => {
     setIsSaving(true);
+
+  try {
     const data = new FormData();
-    
+      data.append("title", formData.title);
+      data.append("content", formData.content);
+      data.append("category_id", formData.category_id);
+      data.append("status", formData.status);
+      data.append("alt_text", formData.alt_text);
+
+    tags.forEach((tag) => data.append("tags", tag));
+
     if (imageFile) {
       data.append("image", imageFile);
     }
 
-    data.append("title", formData.title);
-    data.append("content", formData.content);
-    data.append("category_id", formData.category_id);
-    data.append("alt_text", formData.alt_text);
-    data.append("status", formData.status);
-
-    tags.forEach((tag) => data.append("tags", tag));
-
-    try {
-      if (isEditing) {
-        await api.posts.update(post.slug, data);
-        toast.success("Archive Record Synchronized");
+    if (isEditing && initialPost.slug) {
+        await api.posts.update(initialPost.slug, data);
+        toast.success("Archive updated successfully");
       } else {
         await api.posts.create(data);
-        toast.success("New Artifact Committed to Archive");
+        toast.success("New artifact committed to archive");
+      }
+
+    router.push("/admin/posts");
+      router.refresh();
+    } catch (error: unknown) {
+      let errorMessage = "System rejection: Check backend logs";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
       }
       
-      router.push("/admin");
-      router.refresh();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Archive rejection: Submission failed";
-      toast.error(message);
-      console.error("Editor Error:", err);
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
-  };
+   };
 
-  return {
+   return {
     formData,
     setFormData,
     tags,
@@ -78,4 +71,4 @@ export function usePostEditor(post: Post, isEditing: boolean) {
     isSaving,
     savePost,
   };
-}
+  }
