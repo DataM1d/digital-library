@@ -1,10 +1,10 @@
 export interface User {
-    id: number;
-    username: string;
-    email: string;
-    role: 'user' | 'admin';
-    created_at?: string;
-    updated_at?: string;
+  id: number;
+  username: string;
+  email: string;
+  role: 'user' | 'admin';
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface LoginCredentials {
@@ -19,26 +19,26 @@ export interface RegisterPayload {
 }
 
 export interface Post {
-    id: number;
-    created_by: number; 
-    category_id: number;
-    last_modified_by: number;
-    like_count: number;
-    title: string;
-    content: string;
-    image_url: string;
-    blur_hash?: string;
-    alt_text: string;
-    slug: string;
-    status: 'published' | 'draft';
-    category_name: string; 
-    tags: string[];
-    created_at: string;
-    updated_at: string;
-    user_has_liked?: boolean;
-    meta_description?: string;
-    og_image?: string;
-    comments?: PostComment[];
+  id: number;
+  created_by: number; 
+  category_id: number;
+  last_modified_by: number;
+  like_count: number;
+  title: string;
+  content: string;
+  image_url: string;
+  blur_hash?: string;
+  alt_text: string;
+  slug: string;
+  status: 'published' | 'draft';
+  category_name: string; 
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+  user_has_liked?: boolean;
+  meta_description?: string;
+  og_image?: string;
+  comments?: PostComment[];
 }
 
 export interface PostComment {
@@ -61,8 +61,8 @@ export interface PaginationMeta {
 }
 
 export interface PaginatedResponse<T> {
-    data: T[];
-    meta: PaginationMeta;
+  data: T[];
+  meta: PaginationMeta;
 }
 
 export interface FileUploadResponse {
@@ -71,18 +71,18 @@ export interface FileUploadResponse {
   blur_hash?: string;
 }
 export interface AuthResponse {
-    token: string;
-    user: User;
+  token: string;  
+  user: User;
 }
 
 export interface Category {
-    id: number;
-    name: string;
-    slug: string;
-    description?: string;
-    post_count?: number;
-    created_at?: string;
-    updated_at?: string;
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  post_count?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CategoryPayload {
