@@ -1,7 +1,6 @@
 `The Digital Archive`: Full Stack Engineering Showcase
 
-A high performance, production ready digital library ecosystem. This project demonstrates a transition from a standard `MVC` to a `Domain Driven Onion Architecture` in Go, paired with a modern Next.js 15+ frontend that prioritizes type safety, memory efficiency, and sub 100ms response times.
-
+A high performance, production ready digital library ecosystem. This project demonstrates a transition from a standard `MVC` to a `Domain Driven Onion Architecture` in Go, paired with a modern Next.js 16 frontend that prioritizes type safety, memory efficiency, and strict Zod contract synchronization.
 
 Architectural Engineering Highlights.
 
@@ -22,21 +21,26 @@ Architectural Engineering Highlights.
 3. High Performance Slug Engine (GO):
    Replaced expensive regex heavy logic with a manual single pass `strings.Builder` implementation.
 
-   Security: Prevents memory leaks by automatically pruning state IP tracking entries after a specified TTL without the overhead of Redis for single node deployments.
+   Security: Integrated blueMonday for UGC (User Generated Content) sanitization and Bcrypt for truncation-safe password hashing.
 
+4. Next.js 16 & React 19 Integration (The "Bleeding Edge")
+   One of the first implementations of the Next.js 16 App Router paired with React 19.
 
+   Hydration Resillience: Custom `useAuth` hooks utilize a Mounted State pattern to prevent SSR mismatch when accessing `localstorage`.
+
+   Contract First Validation: Every API response is piped through `Zod Schemas` at the network boundary, ensuring the frontend never attempts to render corrupt or incomplete data.
 
 Tech Stack.
 
 Backend: Go (1.22+).
 FrameWork: Gin Gonic (omptimized with custom JSON binding)
 Architecture: Domain Driven Design (DDD) with Repository Pattern.
-Security: JWT v5, blueMonday (UGC sanitization), Bcrypt (truncation safe).
+Security: JWT v5, blueMonday (UGC sanitization), Bcrypt (truncation safe), CORS Middleware, Rate Limiting (Token Bucket).
 
-Frontend: Nect.Js (15+).
+Frontend: Next.Js (16) & React 19.
 Core: App Router, Server Actions, and Custom Hooks.
 State/Validation: TanStack Query & Zod.
-UI/UX: Tailwind CSS, Framer Motion, Lucide.
+UI/UX: Tailwind CSS v4, Framer Motion, Lucide.
 Media: Custom Image Fallback system with BlurHash support.
 
 Roadmap & Progress
@@ -48,12 +52,21 @@ Roadmap & Progress
 
 [Phase 2] Frontend Intelligence (In Progress)
 - [x] Zod Integration: Runtime validation for all archival endpoints.
-- [ ] Auth Persistence: Automated `Authorization: Bearer` injection via interceptors.
-- [ ] Optimistic UI: Transition Like/Comment mutations to TanStack Query.
+- [x] Auth Persistence: Automated `Authorization: Bearer` injection via interceptors.
+- [x] Optimistic UI: Transition Like/Comment mutations to TanStack Query.
 
 [Phase 3] Advanced Visualization (Upcoming)
 - [ ] The Spatial Archive: A 3D "Vault" view using React Three Fiber.
 - [ ] Real time Sync: WebSockets for live comment thread updates.
+
+Dev Note: The "Turbopack Panic" Resolution
+   During development on React 19, a low level Rust panic was identified in the Turbopack build engine. This was resolved by:
+
+   Reverting to the stable Webpack based dev server (next dev).
+
+   Clearing corrupted task aggregation caches (rm -rf .next).
+
+   Configuring next.config.ts to allow upstream images from private local IPs.
 
 Installation & Setup
 1. Backend
@@ -63,4 +76,6 @@ psql -d digital_library -f scripts/seed.sql
 go run cmd/api/main.go
 
 2. Frontend
-cd frontend && npm install && npm run dev
+cd frontend 
+npm install
+npm run dev
