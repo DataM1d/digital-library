@@ -36,8 +36,8 @@ export interface Post {
   created_at: string;
   updated_at: string;
   user_has_liked?: boolean;
-  meta_description?: string;
-  og_image?: string;
+  meta_description?: string | null;
+  og_image?: string | null;
   comments?: PostComment[];
 }
 
@@ -50,7 +50,7 @@ export interface PostComment {
   parent_id?: number | null;
   created_at: string;
   updated_at: string;
-  replies?: PostComment[];
+  replies?: PostComment[] | null;
 }
 
 export interface PaginationMeta {
