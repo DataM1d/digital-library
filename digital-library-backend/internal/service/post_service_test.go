@@ -11,6 +11,8 @@ import (
 type MockPostRepo struct {
 	OnSlugExists      func(ctx context.Context, slug string) (bool, error)
 	OnCreate          func(ctx context.Context, p *models.Post) error
+	OnUpdate          func(ctx context.Context, p *models.Post) error                // Added for UpdatePost tests
+	OnSyncTags        func(ctx context.Context, postID int, tagNames []string) error // The Fix
 	OnWithTx          func(ctx context.Context, fn func(domain.PostRepo) error) error
 	OnGetAllImageURLs func(ctx context.Context) ([]string, error)
 }
@@ -20,6 +22,13 @@ func (m *MockPostRepo) SlugExists(ctx context.Context, s string) (bool, error) {
 		return m.OnSlugExists(ctx, s)
 	}
 	return false, nil
+}
+
+func (m *MockPostRepo) SyncTags(ctx context.Context, postID int, tagName []string) error {
+	if m.OnSyncTags != nil {
+		return m.OnSyncTags(ctx, postID, tagName)
+	}
+	return nil
 }
 
 func (m *MockPostRepo) Create(ctx context.Context, p *models.Post) error {
@@ -112,4 +121,51 @@ func TestPostService_CreateLibraryEntry(t *testing.T) {
 			t.Errorf("Expected slug the-swedish-archive, got %s", capturedPost.Slug)
 		}
 	})
+}
+
+func TestCreatePost_SyncsTags(t *testing.T) {
+	ctx := context.Background()
+	tagsSynced := false
+	expectedID := 101
+	testTags := []string{"Renaissance"}
+	var mockRepo *MockPostRepo
+
+	mockRepo = &MockPostRepo{
+		OnCreate: func(ctx context.Context, p *models.Post) error {
+			p.ID = expectedID
+			return nil
+		},
+		OnSyncTags: func(ctx context.Context, postID int, tagNames []string) error {
+			if postID == expectedID && len(tagNames) > 0 && tagNames[0] == "Renaissance" {
+				tagsSynced = true
+			}
+			return nil
+		},
+		OnWithTx: func(ctx context.Context, fn func(domain.PostRepo) error) error {
+			return fn(mockRepo)
+		},
+		OnSlugExists: func(ctx context.Context, slug string) (bool, error) {
+			return false, nil
+		},
+	}
+
+	service := NewPostService(mockRepo, nil)
+	post := &models.Post{
+		Title:   "Renaissance Art",
+		Content: "Content about the Renaissance period.",
+	}
+
+	err := service.CreateLibraryEntry(ctx, post, testTags, "admin", 1)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	if !tagsSynced {
+		t.Error("Expected SyncTags to be called, but it was not")
+	}
+
+	if post.ID != expectedID {
+		t.Errorf("Expected ID %d, got %d", expectedID, post.ID)
+	}
 }

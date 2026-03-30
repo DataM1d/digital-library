@@ -54,7 +54,7 @@ func (s *postService) CreateLibraryEntry(ctx context.Context, post *models.Post,
 		}
 
 		if len(tagNames) > 0 {
-			if err := s.tagRepo.SyncPostTags(ctx, post.ID, tagNames); err != nil {
+			if err := txRepo.SyncTags(ctx, post.ID, tagNames); err != nil {
 				return fmt.Errorf("archive: tag sync failure: %w", err)
 			}
 		}
@@ -80,7 +80,7 @@ func (s *postService) UpdatePost(ctx context.Context, post *models.Post, tagName
 		}
 
 		if tagNames != nil {
-			if err := s.tagRepo.SyncPostTags(ctx, post.ID, tagNames); err != nil {
+			if err := txRepo.SyncTags(ctx, post.ID, tagNames); err != nil {
 				return err
 			}
 		}
