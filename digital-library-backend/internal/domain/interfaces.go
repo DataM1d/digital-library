@@ -16,6 +16,7 @@ type DBTX interface {
 type PostRepo interface {
 	Create(ctx context.Context, p *models.Post) error
 	Update(ctx context.Context, p *models.Post) error
+	SyncTags(ctx context.Context, postID int, tagNames []string) error
 	Delete(ctx context.Context, id int) error
 	GetByID(ctx context.Context, id int) (*models.Post, error)
 	GetBySlug(ctx context.Context, slug string, currentUserID int) (*models.Post, error)
