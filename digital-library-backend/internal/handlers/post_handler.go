@@ -86,7 +86,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	categoryID, _ := strconv.Atoi(c.PostForm("category_id"))
-	tagNames := c.Request.MultipartForm.Value["tags"]
+	tagNames := c.PostFormArray("tags")
 
 	post := models.Post{
 		Title:      c.PostForm("title"),
