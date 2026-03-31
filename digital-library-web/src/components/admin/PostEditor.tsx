@@ -60,7 +60,9 @@ export function PostEditor({ post, isEditing = true }: PostEditorProps) {
       formData.append("alt_text", data.alt_text || "");
 
       if (data.tags && data.tags.length > 0) {
-        data.tags.forEach((tag) => formData.append("tags", tag));
+        data.tags.forEach((tag) => {
+          formData.append("tags", tag);
+        })
       }
 
       if (imageFile) {
@@ -158,7 +160,7 @@ export function PostEditor({ post, isEditing = true }: PostEditorProps) {
                   {...register("category_id")}
                   className="w-full p-5 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 outline-none appearance-none font-bold text-sm uppercase"
                 >
-                  <option value="">Select Category</option>
+                  <option value="" disabled>Select Category...</option>
                   {categories.map((cat: Category) => (
                     <option key={cat.id} value={cat.id.toString()}>{cat.name}</option>
                   ))}
