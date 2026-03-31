@@ -51,3 +51,5 @@ VALUES (1, 1, 'First reply to the top level', 1);
 
 INSERT INTO comments (post_id, user_id, content, parent_id) 
 VALUES (1, 1, 'A nested reply (3 levels deep)', 2);
+
+UPDATE posts SET image_url = 'https://plus.unsplash.com/premium_photo-1680103200092-47d168b2a46c?auto=format&fit=crop&q=80&w=800' WHERE slug = 'the-vasa-warship';
