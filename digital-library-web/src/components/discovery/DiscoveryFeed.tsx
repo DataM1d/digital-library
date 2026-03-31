@@ -4,22 +4,31 @@ import { usePosts } from "@/hooks/usePosts";
 import { PostCard } from "@/components/posts/PostCard";
 import { SearchBar } from "./SearchBar";
 import { Loader2 } from "lucide-react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 export function DiscoveryFeed() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
   const { 
     posts, 
-    page, 
-    setPage, 
     meta, 
     isLoading, 
-    handleSearch,
-    searchQuery 
+    searchQuery,
+    page 
   } = usePosts({ initialLimit: 8 });
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", newPage.toString());
+    router.push(`${pathname}?${params.toString()}`, { scroll: true });
+  };
 
   return (
     <div className="space-y-12">
       <div className="flex flex-col items-center justify-center relative">
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar defaultValue={searchQuery} />
         
         {isLoading && posts.length > 0 && (
           <div className="absolute -bottom-8 flex items-center gap-2">
@@ -31,7 +40,7 @@ export function DiscoveryFeed() {
         )}
       </div>
 
-    {isLoading && posts.length === 0 ? (
+      {isLoading && posts.length === 0 ? (
         <FeedSkeleton />
       ) : posts.length > 0 ? (
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -53,7 +62,7 @@ export function DiscoveryFeed() {
         <Pagination 
           current={page} 
           total={meta.total_pages} 
-          onPageChange={setPage} 
+          onPageChange={handlePageChange} 
         />
       )}
     </div>
@@ -65,7 +74,7 @@ function FeedSkeleton() {
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {[...Array(8)].map((_, i) => (
         <div key={i} className="space-y-4 animate-pulse">
-          <div className="aspect-16/10 rounded-3xl bg-zinc-100 dark:bg-zinc-900" />
+          <div className="aspect-[16/10] rounded-3xl bg-zinc-100 dark:bg-zinc-900" />
           <div className="h-3 w-1/4 bg-zinc-100 dark:bg-zinc-900 rounded-full" />
           <div className="h-5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg" />
         </div>
@@ -90,10 +99,8 @@ function Pagination({ current, total, onPageChange }: PaginationProps) {
         return (
           <button
             key={pageNum}
-            onClick={() => {
-              onPageChange(pageNum);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            type="button"
+            onClick={() => onPageChange(pageNum)}
             className={`h-12 w-12 rounded-2xl text-xs font-black transition-all shadow-sm ${
               isActive 
               ? "bg-black text-white dark:bg-white dark:text-black scale-110" 
