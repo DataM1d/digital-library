@@ -1,7 +1,8 @@
 import QueryProvider from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { Inter, JetBrains_Mono, Newsreader } from "next/font/google";
-import "./global.css";
+import "../styles/global.css";
+import { Sidebar } from "../components/layout/Sidebar";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
@@ -19,7 +20,8 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>
-            <main className="w-full min-h-screen pt-0">{children}</main>
+            <Sidebar />
+            <main className="pl-16 w-full min-h-screen pt-0">{children}</main>
           </AuthProvider>
         </QueryProvider>
       </body>

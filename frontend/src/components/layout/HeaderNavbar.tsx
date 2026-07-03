@@ -11,8 +11,8 @@ export function HeaderNavbar() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   return (
-    <div className="w-full flex flex-col">
-      <div className="flex w-full items-center px-6 py-6 transition-all duration-300">
+    <header className="surface border-b border-[var(--color-border)] sticky top-0 z-[var(--z-sticky)] transition-default">
+      <div className="page flex items-center justify-between h-[var(--header-height)]">
         <Link href="/" className="flex items-center group shrink-0">
           <div className="relative w-10 h-6 flex items-center justify-center">
             <Image
@@ -23,28 +23,28 @@ export function HeaderNavbar() {
               className="object-contain"
             />
           </div>
-          <span className="font-mono text-xl ml-3 tracking-[0.02em] uppercase text-white font-medium">
+          <span className="subheading ml-3 tracking-[0.02em] uppercase text-[var(--color-text)]">
             ARCHIVE
           </span>
         </Link>
 
-        <div className="ml-auto flex items-center gap-6">
+        <nav className="flex items-center gap-6">
           {user?.role === "admin" && (
             <button
               onClick={() => setIsUploadOpen(true)}
-              className="font-mono text-[11px] text-zinc-300 hover:text-white uppercase tracking-[0.2em] transition-colors bg-transparent border-none cursor-pointer"
+              className="metadata text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-default cursor-pointer"
             >
               + Add Post
             </button>
           )}
 
           {user?.role === "admin" && (
-            <div className="h-3 w-[1px] bg-zinc-700" />
+            <div className="h-4 w-[1px] bg-[var(--color-border)]" />
           )}
 
           <Link
             href={user ? "/admin" : "/login"}
-            className="flex items-center gap-3 font-mono text-[11px] uppercase text-zinc-300 hover:text-white transition-colors tracking-[0.2em]"
+            className="flex items-center gap-2 metadata text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-default"
           >
             {user ? user.username : "Login"}
             <div className="relative w-4 h-4">
@@ -52,19 +52,17 @@ export function HeaderNavbar() {
                 src="/svg/user.svg"
                 alt="User"
                 fill
-                className="object-contain brightness-100"
+                className="object-contain"
               />
             </div>
           </Link>
-        </div>
+        </nav>
 
         <UploadModal
           isOpen={isUploadOpen}
           onClose={() => setIsUploadOpen(false)}
         />
       </div>
-
-      <div className="w-full h-[1px] bg-gradient-to-r from-zinc-700 via-zinc-800 to-transparent" />
-    </div>
+    </header>
   );
 }

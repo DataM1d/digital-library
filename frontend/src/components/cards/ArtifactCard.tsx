@@ -12,57 +12,42 @@ interface ArtifactCardProps {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export function ArtifactCard({ artifact }: ArtifactCardProps) {
-  const aspectVariants = {
-    portrait: "aspect-[3/4]",
-    landscape: "aspect-[16/10]",
-    square: "aspect-square",
-  };
-
   const imageUrl = artifact.imageUrl?.startsWith("http")
     ? artifact.imageUrl
     : `${API_URL}${artifact.imageUrl}`;
 
   return (
-    <div className="w-full group transition-all duration-300 flex flex-col mb-1 select-none">
-      {artifact.imageUrl && (
-        <Link
-          href={`/posts/${artifact.slug}`}
-          className="block relative overflow-hidden w-full rounded-lg bg-zinc-950"
-        >
-          <div
-            className={`relative w-full ${aspectVariants[artifact.aspectRatio]}`}
-          >
-            <Image
-              src={imageUrl}
-              alt={artifact.title}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover opacity-95 group-hover:opacity-30 group-hover:scale-[1.01] transition-all duration-700 ease-out"
-            />
+    <div className="w-full break-inside-avoid">
+      <Link
+        href={`/posts/${artifact.slug}`}
+        className="group block relative rounded-md overflow-hidden bg-[var(--color-surface-secondary)]"
+      >
+        <div className="image-hover">
+          <Image
+            src={imageUrl}
+            alt={artifact.title}
+            width={600}
+            height={800}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="w-full h-auto transition-transform duration-500"
+          />
+        </div>
+
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+          <div className="border-b border-[var(--color-border)] pb-3 mb-3">
+            <span className="metadata text-[var(--color-text-muted)] block mb-1">
+              {artifact.category}
+            </span>
+            <h3 className="subheading text-[var(--color-text)] leading-tight truncate">
+              {artifact.title}
+            </h3>
           </div>
 
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent
-                       opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
-                       transition-all duration-500 ease-out
-                       flex flex-col justify-end p-5 pointer-events-none"
-          >
-            <div className="flex items-baseline justify-between w-full border-b border-zinc-800/50 pb-2 mb-2.5">
-              <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-zinc-400 font-medium">
-                {artifact.category}
-              </span>
-
-              <h3 className="font-mono text-[12px] font-bold text-[var(--text-bright)] tracking-wide uppercase text-right max-w-[65%] truncate">
-                {artifact.title}
-              </h3>
-            </div>
-
-            <p className="font-sans text-[12px] leading-relaxed text-zinc-300 line-clamp-3 font-light tracking-normal">
-              {artifact.snippet}
-            </p>
-          </div>
-        </Link>
-      )}
+          <p className="body text-[var(--color-text-secondary)] line-clamp-3">
+            {artifact.snippet}
+          </p>
+        </div>
+      </Link>
     </div>
   );
 }
